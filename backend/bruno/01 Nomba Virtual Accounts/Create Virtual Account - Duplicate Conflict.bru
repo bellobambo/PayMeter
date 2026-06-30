@@ -1,0 +1,24 @@
+meta {
+  name: Create Virtual Account - Duplicate Conflict
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/nomba/virtual-accounts
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "userId": "test_user_001",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "companyName": "Acme Labs"
+  }
+}
