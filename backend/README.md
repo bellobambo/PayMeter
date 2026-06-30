@@ -159,7 +159,7 @@ baseUrl=http://localhost:5000
 Current request folders:
 
 ```txt
-00 Health
-01 Nomba Virtual Accounts
-02 Nomba Webhooks
+Health
+Nomba Virtual Accounts
+Nomba Webhooks
 ```
