@@ -46,6 +46,37 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/nomba', nombaRoutes);
 
+const routeMethods: Record<string, string[]> = {
+  '/': ['GET'],
+  '/health': ['GET'],
+  '/api/nomba/virtual-accounts': ['POST'],
+  '/webhooks/nomba': ['POST'],
+};
+
+app.use((req, res, next) => {
+  const allowedMethods = routeMethods[req.path]
+    ?? (
+      req.path.startsWith('/api/nomba/virtual-accounts/')
+        ? ['GET']
+        : null
+    );
+
+  if (!allowedMethods || allowedMethods.includes(req.method)) {
+    next();
+    return;
+  }
+
+  res.setHeader('Allow', allowedMethods.join(', '));
+
+  return errorResponse(res, {
+    statusCode: 405,
+    message: `Method ${req.method} is not allowed for ${req.path}.`,
+    errors: {
+      allowedMethods,
+    },
+  });
+});
+
 app.use((_req, res) => {
   return errorResponse(res, {
     statusCode: 404,
