@@ -92,7 +92,10 @@ export class NombaVirtualAccountService {
 
     const existingAccount = await this.#findExistingVirtualAccount(internalUserId);
     if (existingAccount) {
-      this.#throwExistingAccountError(existingAccount, { name, email });
+      return {
+        ...this.#mapVirtualAccountRow(existingAccount),
+        wasExisting: true,
+      };
     }
 
     const user = await this.#upsertUser({
@@ -353,49 +356,4 @@ export class NombaVirtualAccountService {
     };
   }
 
-  #throwExistingAccountError(
-    existingAccount: VirtualAccountRow,
-    { name, email }: Pick<CreateVirtualAccountInput, 'name' | 'email'>,
-  ): never {
-    const existing = this.#mapVirtualAccountRow(existingAccount);
-    const nameMatches = existing.name?.trim().toLowerCase() === name.trim().toLowerCase();
-    const emailMatches = existing.email?.trim().toLowerCase() === email.trim().toLowerCase();
-    const errors: {
-      userId: string;
-      existingAccount: {
-        accountNumber: string;
-        accountName: Nullable<string>;
-        bankName: string;
-        accountRef: string;
-        currency: string;
-      };
-      name?: string;
-      email?: string;
-    } = {
-      userId: 'This user already has a virtual account.',
-      existingAccount: {
-        accountNumber: existing.bankAccountNumber,
-        accountName: existing.bankAccountName,
-        bankName: existing.bankName,
-        accountRef: existing.accountRef,
-        currency: existing.currency,
-      },
-    };
-
-    if (!nameMatches) {
-      errors.name = `Existing account belongs to "${existing.name}".`;
-    }
-
-    if (!emailMatches) {
-      errors.email = `Existing account email is "${existing.email}".`;
-    }
-
-    throw new AppError(
-      nameMatches && emailMatches
-        ? 'Virtual account already exists for this user.'
-        : 'Virtual account already exists for this user with different saved details.',
-      409,
-      errors,
-    );
-  }
 }
