@@ -55,6 +55,8 @@ create table if not exists public.nomba_webhook_events (
   status text not null default 'pending',
   headers jsonb,
   payload jsonb not null,
+  raw_payload text,
+  confirmed_payment jsonb,
   attempt_count integer not null default 0,
   last_error text,
   processed_at timestamptz,

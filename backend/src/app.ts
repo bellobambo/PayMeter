@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { nombaRoutes } from './routes/nomba.routes.js';
+import { nombaWebhookRoutes } from './routes/nombaWebhook.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { errorResponse, successResponse } from './utils/apiResponse.js';
 
@@ -12,6 +13,13 @@ export const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
+
+app.use(
+  '/webhooks/nomba',
+  express.raw({ type: 'application/json', limit: '1mb' }),
+  nombaWebhookRoutes,
+);
+
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/', (_req, res) => {
@@ -21,6 +29,7 @@ app.get('/', (_req, res) => {
       service: 'paymeter-backend',
       healthCheck: '/health',
       virtualAccounts: '/api/nomba/virtual-accounts',
+      nombaWebhook: '/webhooks/nomba',
     },
   });
 });

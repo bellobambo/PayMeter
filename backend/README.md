@@ -39,6 +39,7 @@ npm run check
 GET  /health
 POST /api/nomba/virtual-accounts
 GET  /api/nomba/virtual-accounts/:userId
+POST /webhooks/nomba
 ```
 
 Create virtual account request:
@@ -77,21 +78,24 @@ Successful response:
 }
 ```
 
-If the user already has a virtual account, the response is a conflict:
+If the user already has a virtual account, the existing account is returned:
 
 ```json
 {
-  "success": false,
+  "success": true,
   "message": "Virtual account already exists for this user.",
-  "errors": {
-    "userId": "This user already has a virtual account.",
-    "existingAccount": {
-      "accountNumber": "5343270516",
-      "accountName": "John Doe",
-      "bankName": "Nomba",
-      "accountRef": "paymeter_user_user_123",
-      "currency": "NGN"
-    }
+  "data": {
+    "userId": "user_123",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "companyName": "Acme Labs",
+    "phoneNumber": "+2348012345678",
+    "accountNumber": "5343270516",
+    "accountName": "John Doe",
+    "bankName": "Nomba",
+    "accountRef": "paymeter_user_user_123",
+    "currency": "NGN",
+    "wasExisting": true
   }
 }
 ```
@@ -144,6 +148,8 @@ Successful response:
 - Access tokens are cached in memory and refreshed before expiry using `/v1/auth/token/refresh`.
 - Virtual accounts use stable `accountRef` values generated from the internal user ID.
 - The current virtual account flow does not set `expectedAmount`/`amount`, because PayMeter top-ups should accept arbitrary transfer amounts.
+- The Nomba webhook endpoint is `POST /webhooks/nomba`.
+- Webhooks are verified with `nomba-signature` and `nomba-timestamp`, saved before processing, deduplicated by request/transaction ID, then verified against Nomba before producing the Task 2 payment handoff.
 - Sub-account creation is not implemented here because this service expects the team's existing sub-account ID in `NOMBA_SUB_ACCOUNT_ID`.
 
 ## Bruno API Collection
