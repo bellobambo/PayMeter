@@ -1,5 +1,5 @@
 meta {
-  name: Create Virtual Account - With Optional Company
+  name: Create Virtual Account
   type: http
   seq: 1
 }
@@ -19,7 +19,9 @@ body:json {
     "userId": "test_user_001",
     "name": "John Doe",
     "email": "john.doe@example.com",
+    // optional
     "companyName": "Acme Labs",
+    // optional
     "phoneNumber": "+2348012345678"
   }
 }
