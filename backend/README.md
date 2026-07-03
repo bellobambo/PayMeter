@@ -244,5 +244,6 @@ Current request folders:
 ```txt
 Health
 Nomba Virtual Accounts
+Nomba Money
 Nomba Webhooks
 ```
