@@ -1,0 +1,22 @@
+meta {
+  name: Lookup Bank Account
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/nomba/bank-lookup
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "accountNumber": "replace-with-recipient-account-number",
+    "bankCode": "305"
+  }
+}

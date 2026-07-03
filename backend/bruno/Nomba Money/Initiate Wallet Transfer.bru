@@ -1,0 +1,25 @@
+meta {
+  name: Initiate Wallet Transfer
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/nomba/transfers/wallet
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "amount": 1000,
+    "receiverAccountId": "replace-with-recipient-nomba-account-id",
+    "merchantTxRef": "paymeter-wallet-transfer-001",
+    "senderName": "PayMeter",
+    "narration": "PayMeter wallet transfer"
+  }
+}

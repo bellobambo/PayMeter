@@ -1,0 +1,11 @@
+meta {
+  name: Get Sub Account Balance
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/nomba/balance?subAccountId=replace-with-sub-account-id
+  body: none
+  auth: none
+}
