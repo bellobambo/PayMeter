@@ -29,6 +29,11 @@ app.get('/', (_req, res) => {
       service: 'paymeter-backend',
       healthCheck: '/health',
       virtualAccounts: '/api/nomba/virtual-accounts',
+      nombaBalance: '/api/nomba/balance',
+      nombaBanks: '/api/nomba/banks',
+      nombaBankLookup: '/api/nomba/bank-lookup',
+      nombaBankTransfer: '/api/nomba/transfers/bank',
+      nombaWalletTransfer: '/api/nomba/transfers/wallet',
       nombaWebhook: '/webhooks/nomba',
     },
   });
@@ -50,6 +55,11 @@ const routeMethods: Record<string, string[]> = {
   '/': ['GET'],
   '/health': ['GET'],
   '/api/nomba/virtual-accounts': ['POST'],
+  '/api/nomba/balance': ['GET'],
+  '/api/nomba/banks': ['GET'],
+  '/api/nomba/bank-lookup': ['POST'],
+  '/api/nomba/transfers/bank': ['POST'],
+  '/api/nomba/transfers/wallet': ['POST'],
   '/webhooks/nomba': ['POST'],
 };
 

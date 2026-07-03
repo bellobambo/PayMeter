@@ -39,6 +39,12 @@ npm run check
 GET  /health
 POST /api/nomba/virtual-accounts
 GET  /api/nomba/virtual-accounts/:userId
+GET  /api/nomba/balance
+GET  /api/nomba/balance?subAccountId=<sub-account-id>
+GET  /api/nomba/banks
+POST /api/nomba/bank-lookup
+POST /api/nomba/transfers/bank
+POST /api/nomba/transfers/wallet
 POST /webhooks/nomba
 ```
 
@@ -141,11 +147,82 @@ Successful response:
 }
 ```
 
+Fetch parent account balance:
+
+```txt
+GET /api/nomba/balance
+```
+
+Fetch sub-account balance:
+
+```txt
+GET /api/nomba/balance?subAccountId=<sub-account-id>
+```
+
+Fetch supported banks:
+
+```txt
+GET /api/nomba/banks
+```
+
+Verify a recipient bank account before transfer:
+
+```txt
+POST /api/nomba/bank-lookup
+```
+
+```json
+{
+  "accountNumber": "0123456789",
+  "bankCode": "058"
+}
+```
+
+Initiate a bank transfer from the parent account:
+
+```txt
+POST /api/nomba/transfers/bank
+```
+
+```json
+{
+  "amount": 3500,
+  "accountNumber": "0123456789",
+  "accountName": "Recipient Name",
+  "bankCode": "058",
+  "merchantTxRef": "paymeter-transfer-001",
+  "senderName": "PayMeter",
+  "narration": "PayMeter payout"
+}
+```
+
+To initiate from a Nomba sub-account, include `subAccountId` in the same payload. Nomba must enable sub-account transfers on the account before this works.
+
+Initiate a wallet transfer to another Nomba account:
+
+```txt
+POST /api/nomba/transfers/wallet
+```
+
+```json
+{
+  "amount": 3500,
+  "receiverAccountId": "receiver-nomba-account-id",
+  "merchantTxRef": "paymeter-wallet-transfer-001",
+  "senderName": "PayMeter",
+  "narration": "PayMeter wallet transfer"
+}
+```
+
+`merchantTxRef` must be unique per transfer. Treat it as the idempotency and reconciliation key for payout initiation.
+
 ## Nomba Notes Covered
 
 - Server-to-server auth uses OAuth `client_credentials`.
 - Authenticated Nomba calls send both `Authorization: Bearer <token>` and `accountId`.
 - Access tokens are cached in memory and refreshed before expiry using `/v1/auth/token/refresh`.
+- Balance lookup supports both the parent account and an optional Nomba sub-account.
+- Bank payouts should call `/api/nomba/bank-lookup` first so callers can confirm the recipient account name before initiating the transfer.
 - Virtual accounts use stable `accountRef` values generated from the internal user ID.
 - The current virtual account flow does not set `expectedAmount`/`amount`, because PayMeter top-ups should accept arbitrary transfer amounts.
 - The Nomba webhook endpoint is `POST /webhooks/nomba`.
