@@ -4,6 +4,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import { env } from '../config/env.js';
 import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/AppError.js';
+import { retry } from '../utils/retry.js';
 import { NombaAuthService } from './NombaAuthService.js';
 
 type NombaWebhookPayload = {
@@ -125,6 +126,28 @@ export class NombaWebhookService {
         }
 
         const confirmedPayment = await this.#buildConfirmedPayment(event);
+
+        // Credit the user's balance and log funding history via RPC
+        const { data: creditResult, error: creditError } = await retry(
+          async () => {
+            const res = await supabase.rpc('credit_user_balance', {
+              p_internal_user_id: confirmedPayment.userId,
+              p_amount: confirmedPayment.amount,
+              p_webhook_event_id: eventId,
+            });
+            return res;
+          },
+          { retries: 3, delayMs: 200 },
+        );
+
+        if (creditError) {
+          throw new Error(`Failed to credit user balance via RPC: ${creditError.message}`);
+        }
+
+        const creditResultObj = creditResult as { success: boolean; reason?: string };
+        if (creditResultObj && !creditResultObj.success) {
+          throw new Error(`Failed to credit user balance: ${creditResultObj.reason ?? 'Unknown reason'}`);
+        }
 
         await supabase
           .from('nomba_webhook_events')

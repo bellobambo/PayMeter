@@ -105,6 +105,24 @@ export class NombaVirtualAccountService {
       companyName,
       phoneNumber,
     });
+
+    // Initialize user's balance to 0 if not exists
+    const { data: existingBalance } = await supabase
+      .from('balances')
+      .select('id')
+      .eq('internal_user_id', internalUserId)
+      .maybeSingle();
+
+    if (!existingBalance) {
+      await supabase
+        .from('balances')
+        .insert({
+          user_id: user.id,
+          internal_user_id: internalUserId,
+          amount: 0,
+        });
+    }
+
     const accountRef = `paymeter_user_${internalUserId}`;
 
     const nombaAccount = await retry(
