@@ -1,0 +1,22 @@
+meta {
+  name: Toggle Feature Status
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/features/{{featureId}}/toggle
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("should toggle feature successfully", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+  });
+}

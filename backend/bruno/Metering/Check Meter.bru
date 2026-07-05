@@ -1,0 +1,29 @@
+meta {
+  name: Check Meter
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/meter
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "userId": "test_user_001",
+    "featureName": "Caption Generation"
+  }
+}
+
+tests {
+  test("should execute entitlement check", function() {
+    // Expect 200 (if has balance) or 402 (if insufficient balance)
+    expect([200, 402]).to.include(res.status);
+  });
+}

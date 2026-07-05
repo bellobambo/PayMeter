@@ -1,0 +1,33 @@
+meta {
+  name: Login Founder
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/founders/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "tunde@paymeter.local",
+    "password": "securepassword123"
+  }
+}
+
+tests {
+  test("should login successfully", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+  });
+  
+  if (res.body && res.body.success && res.body.data && res.body.data.token) {
+    bru.setVar("token", res.body.data.token);
+  }
+}
