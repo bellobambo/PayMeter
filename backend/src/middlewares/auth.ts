@@ -13,28 +13,28 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export function requireFounderAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    throw new AppError('Authorization header is required.', 401);
-  }
+    if (!authHeader) {
+        throw new AppError('Authorization header is required.', 401);
+    }
 
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2) {
-    throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
-  }
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2) {
+        throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
+    }
 
-  const [type, token] = parts;
-  if (type !== 'Bearer' || !token) {
-    throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
-  }
+    const [type, token] = parts;
+    if (type !== 'Bearer' || !token) {
+        throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
+    }
 
-  const decoded = verifyToken<{ id: string; email: string; name: string }>(token, env.jwtSecret);
+    const decoded = verifyToken<{ id: string; email: string; name: string }>(token, env.jwtSecret);
 
-  if (!decoded) {
-    throw new AppError('Invalid or expired authorization token.', 401);
-  }
+    if (!decoded) {
+        throw new AppError('Invalid or expired authorization token.', 401);
+    }
 
-  req.founder = decoded;
-  next();
+    req.founder = decoded;
+    next();
 }

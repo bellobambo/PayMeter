@@ -1,12 +1,12 @@
 import { Router } from 'express';
 
 import {
-  getUserBalanceAndHistory,
-  meterCheck,
+    getUserBalanceAndHistory,
+    meterCheck,
 } from '../controllers/MeterController.js';
 import {
-  validateMeterCheck,
-  validateUserBalanceQuery,
+    validateMeterCheck,
+    validateUserBalanceQuery,
 } from '../validators/meter.validators.js';
 
 export const meterRoutes = Router();

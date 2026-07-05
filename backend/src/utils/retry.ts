@@ -4,25 +4,25 @@ type RetryOptions = {
 };
 
 export async function retry<T>(operation: () => Promise<T>, { retries, delayMs }: RetryOptions): Promise<T> {
-  let lastError: unknown;
+    let lastError: unknown;
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+        try {
+            return await operation();
+        } catch (error) {
+            lastError = error;
 
-      if (attempt < retries) {
-        await wait(delayMs);
-      }
+            if (attempt < retries) {
+                await wait(delayMs);
+            }
+        }
     }
-  }
 
-  throw lastError;
+    throw lastError;
 }
 
 function wait(delayMs: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
+    return new Promise((resolve) => {
+        setTimeout(resolve, delayMs);
+    });
 }

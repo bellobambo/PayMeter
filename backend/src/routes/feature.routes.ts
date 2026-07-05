@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
 import {
-  createFeature,
-  listFeatures,
-  toggleFeature,
-  updateFeature,
+    createFeature,
+    listFeatures,
+    toggleFeature,
+    updateFeature,
 } from '../controllers/FeatureController.js';
 import { requireFounderAuth } from '../middlewares/auth.js';
 import { validateFeature } from '../validators/feature.validators.js';
