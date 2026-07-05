@@ -1,0 +1,30 @@
+meta {
+  name: Update Feature
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/features/{{featureId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Advanced Caption Generation",
+    "price": 75
+  }
+}
+
+tests {
+  test("should update feature successfully", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+  });
+}

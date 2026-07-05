@@ -16,43 +16,43 @@ type ErrorResponseOptions = {
 };
 
 export function successResponse<TData = null, TMeta = null>(
-  res: Response,
-  { statusCode = 200, message, data = null as TData, meta = null as TMeta }: SuccessResponseOptions<TData, TMeta>,
+    res: Response,
+    { statusCode = 200, message, data = null as TData, meta = null as TMeta }: SuccessResponseOptions<TData, TMeta>,
 ) {
-  const body: {
+    const body: {
     success: true;
     message: string;
     data: TData;
     meta?: TMeta;
   } = {
-    success: true,
-    message,
-    data,
+      success: true,
+      message,
+      data,
   };
 
-  if (meta) {
-    body.meta = meta;
-  }
+    if (meta) {
+        body.meta = meta;
+    }
 
-  return res.status(statusCode).json(body);
+    return res.status(statusCode).json(body);
 }
 
 export function errorResponse(
-  res: Response,
-  { statusCode = 500, message, errors = null }: ErrorResponseOptions,
+    res: Response,
+    { statusCode = 500, message, errors = null }: ErrorResponseOptions,
 ) {
-  const body: {
+    const body: {
     success: false;
     message: string;
     errors?: ErrorDetails;
   } = {
-    success: false,
-    message,
+      success: false,
+      message,
   };
 
-  if (errors) {
-    body.errors = errors;
-  }
+    if (errors) {
+        body.errors = errors;
+    }
 
-  return res.status(statusCode).json(body);
+    return res.status(statusCode).json(body);
 }

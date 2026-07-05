@@ -1,0 +1,18 @@
+meta {
+  name: Get User Balance and History
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/users/test_user_001/balance
+  body: none
+  auth: none
+}
+
+tests {
+  test("should get balance successfully", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+  });
+}
