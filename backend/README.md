@@ -1,6 +1,6 @@
 # PayMeter Backend
 
-Task 1 Nomba connection layer for PayMeter.
+Core backend engine for PayMeter. Includes **Task 1: Nomba Connection Layer** (creating virtual accounts, webhook listening, transaction verification) and **Task 2: Metering & Balance Engine** (entitlement checks, balance tracking, funding history, analytics, features management).
 
 ## Setup
 
@@ -35,6 +35,7 @@ npm run check
 
 ## Implemented Routes
 
+### Nomba Connection Layer (Task 1)
 ```txt
 GET  /health
 POST /api/nomba/virtual-accounts
@@ -46,6 +47,19 @@ POST /api/nomba/bank-lookup
 POST /api/nomba/transfers/bank
 POST /api/nomba/transfers/wallet
 POST /webhooks/nomba
+```
+
+### Metering & Balance Engine (Task 2)
+```txt
+POST /api/founders/register
+POST /api/founders/login
+GET  /api/founders/analytics
+POST /api/features
+GET  /api/features
+PUT  /api/features/:id
+PATCH /api/features/:id/toggle
+POST /api/meter
+GET  /api/users/:userId/balance
 ```
 
 Create virtual account request:
@@ -229,6 +243,13 @@ POST /api/nomba/transfers/wallet
 - Webhooks are verified with `nomba-signature` and `nomba-timestamp`, saved before processing, deduplicated by request/transaction ID, then verified against Nomba before producing the Task 2 payment handoff.
 - Sub-account creation is not implemented here because this service expects the team's existing sub-account ID in `NOMBA_SUB_ACCOUNT_ID`.
 
+## Metering & Balance Notes (Task 2)
+
+- **Atomic Checks**: Metering queries use `SELECT FOR UPDATE` database locks within the Postgres `check_and_deduct_meter` stored procedure, ensuring atomic transactions and avoiding double-spend race conditions on rapid clicking.
+- **Idempotency Guard**: Confirmed top-ups check for existing transactions inside `credit_user_balance` to prevent double-crediting on webhook processor retries.
+- **Zero-Dependency Auth**: Leverages native Node.js `crypto` (PBKDF2 and HMAC-SHA256) for password security and JWT signing, keeping build size small and free of native C++ binary requirements (like standard bcrypt).
+- **History Auditing**: Separate append-only logs are written for feature usage (`usage_logs`) and wallet deposits (`funding_history`) to enable clear revenue reporting.
+
 ## Bruno API Collection
 
 Import the `bruno/` folder in Bruno.
@@ -246,4 +267,7 @@ Health
 Nomba Virtual Accounts
 Nomba Money
 Nomba Webhooks
+Founders Auth
+Features
+Metering
 ```
