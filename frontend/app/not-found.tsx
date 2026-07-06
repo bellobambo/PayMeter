@@ -18,10 +18,10 @@ export default function NotFound() {
         </p>
         <Link
           className="focus-ring mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white transition hover:bg-carbon"
-          href="/studio"
+          href="/studio/access"
         >
           <ArrowLeft className="size-4" />
-          Back to Studio
+          Back to Studio access
         </Link>
       </section>
     </main>

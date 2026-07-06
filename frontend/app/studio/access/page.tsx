@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import clsx from "clsx";
+import { BrandMark } from "@/components/BrandMark";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
 import { useConsoleData } from "@/components/console/ConsoleDataProvider";
 
@@ -14,7 +15,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ConsoleAccessPage() {
   const router = useRouter();
-  const { error, isLiveMode, login, logout, register, session } = useConsoleData();
+  const { login, logout, register, session } = useConsoleData();
   const [authMode, setAuthMode] = useState<AuthMode>("signup");
   const [founderName, setFounderName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,6 +26,21 @@ export default function ConsoleAccessPage() {
 
   function switchMode(mode: AuthMode) {
     setAuthMode(mode);
+    setAuthError("");
+  }
+
+  function updateEmail(value: string) {
+    setEmail(value);
+    setAuthError("");
+  }
+
+  function updatePassword(value: string) {
+    setPassword(value);
+    setAuthError("");
+  }
+
+  function switchToSignup() {
+    setAuthMode("signup");
     setAuthError("");
   }
 
@@ -69,13 +85,20 @@ export default function ConsoleAccessPage() {
         message.toLowerCase().includes("already defined"));
 
     if (looksLikeExistingEmail) {
-      setAuthMode("login");
-      setAuthError("That email already has a Studio workspace. We switched you to login.");
+      setAuthError("This email already has a Studio workspace. Log in with the original password, or use another email to create a new workspace.");
+      return;
+    }
+
+    if (authMode === "login" && message.toLowerCase().includes("invalid email or password")) {
+      setAuthError("Those login details did not match a Studio workspace. Check the password or create a new workspace with this email.");
       return;
     }
 
     setAuthError(message);
   }
+
+  const showLoginRecovery = authMode === "signup" && authError.toLowerCase().includes("already has a studio workspace");
+  const showSignupRecovery = authMode === "login" && authError.toLowerCase().includes("did not match");
 
   if (session) {
     return (
@@ -118,14 +141,21 @@ export default function ConsoleAccessPage() {
   }
 
   return (
-    <>
-      <ConsoleHeader
-        description="Create or enter the workspace where a founder manages feature pricing, usage, and revenue."
-        eyebrow="Studio access"
-        title="Enter PayMeter Studio."
-      />
+    <section className="mx-auto w-full max-w-xl">
+      <div className="mb-8 flex justify-center">
+        <BrandMark />
+      </div>
+      <div className="text-center">
+        <p className="inline-flex rounded-full border border-ink/10 bg-white px-3 py-1 text-xs font-semibold text-graphite shadow-line">
+          Studio access
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold leading-tight text-ink sm:text-4xl">Enter PayMeter Studio.</h1>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-graphite">
+          Create or enter the workspace where a founder manages feature pricing, usage, and revenue.
+        </p>
+      </div>
 
-      <section className="mt-6 max-w-xl">
+      <div className="mt-6">
         <div className="rounded-lg border border-ink/10 bg-white p-5 shadow-line sm:p-6">
           <div className="mb-6 grid grid-cols-2 rounded-lg border border-ink/10 bg-paper p-1">
             <button
@@ -170,7 +200,7 @@ export default function ConsoleAccessPage() {
               <input
                 className="input-shell"
                 inputMode="email"
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => updateEmail(event.target.value)}
                 placeholder="founder@company.com"
                 value={email}
               />
@@ -181,7 +211,7 @@ export default function ConsoleAccessPage() {
               <span className="relative block">
                 <input
                   className="input-shell pr-12"
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => updatePassword(event.target.value)}
                   placeholder="Minimum 6 characters"
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -197,7 +227,29 @@ export default function ConsoleAccessPage() {
               </span>
             </label>
 
-            {authError || error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{authError || error}</p> : null}
+            {authError ? (
+              <div className="rounded-lg bg-red-50 px-3 py-3 text-sm text-red-700">
+                <p>{authError}</p>
+                {showSignupRecovery ? (
+                  <button
+                    className="mt-2 text-sm font-semibold text-red-800 underline underline-offset-4"
+                    onClick={switchToSignup}
+                    type="button"
+                  >
+                    Create a Studio workspace instead
+                  </button>
+                ) : null}
+                {showLoginRecovery ? (
+                  <button
+                    className="mt-2 text-sm font-semibold text-red-800 underline underline-offset-4"
+                    onClick={() => switchMode("login")}
+                    type="button"
+                  >
+                    Go to login
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
             <button
               className="focus-ring flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white transition hover:bg-carbon disabled:cursor-not-allowed disabled:opacity-60"
@@ -207,11 +259,8 @@ export default function ConsoleAccessPage() {
               <ArrowRight className="size-4" />
             </button>
           </form>
-          <p className="mt-4 text-center text-xs text-graphite">
-            {isLiveMode ? "Secure Studio access is connected." : "Preview mode is active until the backend URL is configured."}
-          </p>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }

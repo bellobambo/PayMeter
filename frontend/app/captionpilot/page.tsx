@@ -25,9 +25,9 @@ export default function CaptionPilotSignupPage() {
   return (
     <>
       <CaptionPilotHeader
-        description="Create a writing profile, describe your campaign, and pay in naira only when a caption is generated."
+        description="For founders, creators, and small teams who need launch copy occasionally, CaptionPilot turns rough campaign notes into channel-ready captions without forcing a monthly subscription."
         eyebrow="CaptionPilot"
-        title="Write better launch captions without another subscription."
+        title="Pay per caption when you need campaign copy."
       />
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[440px_1fr]">
@@ -39,7 +39,7 @@ export default function CaptionPilotSignupPage() {
             <div>
               <h2 className="text-xl font-semibold text-ink">Create your profile</h2>
               <p className="mt-2 text-sm leading-6 text-graphite">
-                Keep your caption history, payment details, and writing preferences in one clean workspace.
+                Keep your caption history, payment details, and writing preferences in one focused workspace.
               </p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function CaptionPilotSignupPage() {
               </div>
               <h2 className="mt-6 text-3xl font-semibold text-ink">Ready to write, {user.name}</h2>
               <p className="mt-3 text-sm leading-6 text-graphite">
-                You can generate captions immediately and pay per result in naira.
+                You can turn campaign notes into captions immediately and pay per result in naira.
               </p>
               <div className="mt-6 rounded-lg border border-ink/10 bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-graphite/60">Payment account</p>
@@ -117,17 +117,17 @@ export default function CaptionPilotSignupPage() {
                 <div className="grid size-14 place-items-center rounded-lg bg-mint-50 text-mint-700">
                   <Sparkles className="size-7" />
                 </div>
-                <h2 className="mt-6 max-w-xl text-3xl font-semibold text-ink">Launch copy, priced per successful generation.</h2>
+                <h2 className="mt-6 max-w-xl text-3xl font-semibold text-ink">Launch copy without paying for unused months.</h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-graphite">
-                  Draft channel-ready captions for product launches, offers, and announcements with simple naira pricing.
+                  Draft captions for Instagram, WhatsApp, LinkedIn, and X when you have a campaign to ship, not a subscription to justify.
                 </p>
               </div>
 
               <div className="grid gap-3 md:grid-cols-3">
                 {[
                   ["Profile", "Save your writing workspace."],
-                  ["Brief", "Describe what you are launching."],
-                  ["Pay per result", "Pay only when a caption is generated."],
+                  ["Brief", "Describe the product, offer, or launch."],
+                  ["Pay per caption", "Use simple naira pricing per result."],
                 ].map(([title, body]) => (
                   <div className="rounded-lg border border-ink/10 bg-white p-4" key={title}>
                     <PenLine className="size-5 text-mint-700" />
@@ -144,8 +144,8 @@ export default function CaptionPilotSignupPage() {
       <section className="mt-6 grid gap-3 md:grid-cols-3">
         {[
           ["Clear pricing", "The caption price is visible before generation."],
-          ["Fast checkout", "Small naira payments happen at the moment of use."],
-          ["Writing history", "Generated and declined attempts stay easy to review."],
+          ["Useful outputs", "Captions are shaped for the channel and tone you choose."],
+          ["Writing history", "Generated captions and charges stay easy to review."],
         ].map(([title, body]) => (
           <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-line" key={title}>
             <ShieldCheck className="size-5 text-mint-700" />

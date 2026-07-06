@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { meterFeatureUse, registerEndUser } from "@/lib/api/paymeter-client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { registerEndUser } from "@/lib/api/paymeter-client";
 import { formatNaira } from "@/lib/format";
 import type { DemoUser, UsageEvent } from "@/lib/types";
 
@@ -44,15 +44,66 @@ export type CaptionPilotToast = {
 };
 
 const CaptionPilotContext = createContext<CaptionPilotContextValue | null>(null);
+const CAPTIONPILOT_STORAGE_KEY = "captionpilot_state";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function buildCaption({ brief, platform, tone }: CaptionRequest) {
-  const cleanBrief = brief.trim() || "your next campaign";
-  const cleanPlatform = platform.trim() || "your audience";
-  const cleanTone = tone.trim().toLowerCase();
+type PersistedCaptionPilotState = {
+  user: DemoUser | null;
+  balance: number;
+  caption: string;
+  events: UsageEvent[];
+};
 
-  return `${cleanBrief} is ready for customers who want progress without friction. Share it on ${cleanPlatform} with a ${cleanTone} voice: simple promise, clear value, and one confident next step. Start today, pay only when the work gets done.`;
+function sentenceCase(value: string) {
+  const cleanValue = value.trim().replace(/\s+/g, " ");
+  return cleanValue ? cleanValue.charAt(0).toUpperCase() + cleanValue.slice(1) : "Your next campaign";
+}
+
+function buildCaption({ brief, platform, tone }: CaptionRequest) {
+  const product = sentenceCase(brief);
+  const cleanPlatform = platform.trim();
+  const cleanTone = tone.trim();
+
+  const toneMap: Record<string, { hook: string; proof: string; cta: string }> = {
+    Confident: {
+      hook: `${product} is built for teams that want clearer launches, faster decisions, and less guesswork.`,
+      proof: "Turn the messy parts of the work into a simple flow your customers can understand in seconds.",
+      cta: "Start with one task today and see the difference before your next campaign goes live.",
+    },
+    Friendly: {
+      hook: `Meet ${product}.`,
+      proof: "It helps you move from rough ideas to useful copy without wrestling with a blank page.",
+      cta: "Try it on your next launch and give your customers one clear reason to care.",
+    },
+    Premium: {
+      hook: `${product} gives growing teams a sharper way to communicate value.`,
+      proof: "Every launch gets cleaner positioning, a stronger customer promise, and copy that feels ready to publish.",
+      cta: "Bring more polish to your next campaign without adding another heavy workflow.",
+    },
+    Direct: {
+      hook: `${product} helps you say what matters and move customers to action.`,
+      proof: "No vague messaging. No endless rewrite loop. Just launch-ready copy with a clear next step.",
+      cta: "Use it for your next campaign and publish faster.",
+    },
+  };
+
+  const selectedTone = toneMap[cleanTone] ?? toneMap.Confident;
+  const hashtagLine = "#Marketing #SmallBusiness #AITools";
+
+  if (cleanPlatform === "X") {
+    return `${selectedTone.hook} ${selectedTone.cta}`;
+  }
+
+  if (cleanPlatform === "WhatsApp") {
+    return `${selectedTone.hook}\n\n${selectedTone.proof}\n\n${selectedTone.cta}`;
+  }
+
+  if (cleanPlatform === "LinkedIn") {
+    return `${selectedTone.hook}\n\n${selectedTone.proof}\n\nFor founders and teams, the real win is momentum: explain the offer, show the value, and get the next customer conversation started.\n\n${selectedTone.cta}`;
+  }
+
+  return `${selectedTone.hook}\n\n${selectedTone.proof}\n\n${selectedTone.cta}\n\n${hashtagLine}`;
 }
 
 export function CaptionPilotProvider({ children }: { children: React.ReactNode }) {
@@ -62,11 +113,59 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
   const [caption, setCaption] = useState("");
   const [events, setEvents] = useState<UsageEvent[]>([]);
   const [toasts, setToasts] = useState<CaptionPilotToast[]>([]);
+  const [isRestored, setIsRestored] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isMetering, setIsMetering] = useState(false);
   const [isFunding, setIsFunding] = useState(false);
 
   const canUseFeature = balance >= captionFeature.price;
+
+  useEffect(() => {
+    const restoreTimer = window.setTimeout(() => {
+      const savedState = window.localStorage.getItem(CAPTIONPILOT_STORAGE_KEY);
+
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState) as PersistedCaptionPilotState;
+          setUser(parsed.user ?? null);
+          setBalance(Number(parsed.balance) || 0);
+          setCaption(parsed.caption ?? "");
+          setEvents(Array.isArray(parsed.events) ? parsed.events : []);
+
+          if (parsed.user) {
+            setNotice(`Welcome back, ${parsed.user.name}.`);
+          }
+        } catch {
+          window.localStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
+        }
+      }
+
+      setIsRestored(true);
+    }, 0);
+
+    return () => window.clearTimeout(restoreTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!isRestored) {
+      return;
+    }
+
+    if (!user) {
+      window.localStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(
+      CAPTIONPILOT_STORAGE_KEY,
+      JSON.stringify({
+        user,
+        balance,
+        caption,
+        events,
+      } satisfies PersistedCaptionPilotState),
+    );
+  }, [balance, caption, events, isRestored, user]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -103,7 +202,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       setIsRegistering(true);
       const registered = await registerEndUser(input);
       setUser(registered);
-      setNotice("Your account is ready. You can pay in naira whenever you generate.");
+      setNotice("Your account is ready. Add caption credit before generating.");
       pushToast({
         tone: "success",
         title: "Account created",
@@ -138,83 +237,10 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       return;
     }
 
-    setIsMetering(true);
-    setCaption("");
     const requestKey = `meter_${user.id}_${captionFeature.id}_${Date.now()}`;
 
-    try {
-      if (balance < captionFeature.price) {
-        setNotice(`Processing ${formatNaira(captionFeature.price)} payment...`);
-        pushToast({
-          tone: "info",
-          title: "Payment started",
-          message: `${formatNaira(captionFeature.price)} will be charged for this caption.`,
-        });
-        await new Promise((resolve) => window.setTimeout(resolve, 720));
-
-        const generatedCaption = buildCaption(input);
-        setCaption(generatedCaption);
-        setEvents((current) =>
-          [
-            {
-              id: requestKey,
-              featureName: captionFeature.name,
-              amount: captionFeature.price,
-              status: "allowed" as const,
-              createdAt: new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }),
-            },
-            ...current,
-          ].slice(0, 8),
-        );
-        setNotice(`${formatNaira(captionFeature.price)} paid. Your caption is ready.`);
-        pushToast({
-          tone: "success",
-          title: "Caption generated",
-          message: `${formatNaira(captionFeature.price)} paid successfully.`,
-        });
-        return;
-      }
-
-      const result = await meterFeatureUse(
-        {
-          userId: user.id,
-          featureName: captionFeature.name,
-        },
-        {
-          balance,
-          featureName: captionFeature.name,
-          featurePrice: captionFeature.price,
-        },
-      );
-
-      setBalance(result.balance);
-      setEvents((current) => (result.usageEvent ? [{ ...result.usageEvent, id: requestKey }, ...current].slice(0, 8) : current));
-
-      if (result.allowed) {
-        setCaption(buildCaption(input));
-        setNotice(`${formatNaira(result.chargedAmount)} used for this caption. Your credit is now ${formatNaira(result.balance)}.`);
-        pushToast({
-          tone: "success",
-          title: "Caption generated",
-          message: `${formatNaira(result.chargedAmount)} deducted from your credit.`,
-        });
-      } else {
-        setNotice(`Pay ${formatNaira(captionFeature.price)} to generate this caption.`);
-        pushToast({
-          tone: "error",
-          title: "Payment needed",
-          message: `This caption costs ${formatNaira(captionFeature.price)}.`,
-        });
-      }
-    } catch (caughtError) {
-      const message = caughtError instanceof Error ? caughtError.message : "Payment could not be completed.";
-      const friendlyMessage = message.includes("insufficient") || message.includes("denied") ? `Pay ${formatNaira(captionFeature.price)} to generate this caption.` : message;
-      setNotice(friendlyMessage);
-      pushToast({
-        tone: "error",
-        title: "Caption not generated",
-        message: friendlyMessage,
-      });
+    if (balance < captionFeature.price) {
+      setNotice(`Add at least ${formatNaira(captionFeature.price)} credit before generating.`);
       setEvents((current) =>
         [
           {
@@ -227,6 +253,48 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
           ...current,
         ].slice(0, 8),
       );
+      pushToast({
+        tone: "error",
+        title: "Insufficient credit",
+        message: `Add ${formatNaira(captionFeature.price)} credit before generating this caption.`,
+      });
+      return;
+    }
+
+    setIsMetering(true);
+    setCaption("");
+
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 600));
+      const nextBalance = Math.max(0, balance - captionFeature.price);
+      setBalance(nextBalance);
+      setCaption(buildCaption(input));
+      setEvents((current) =>
+        [
+          {
+            id: requestKey,
+            featureName: captionFeature.name,
+            amount: captionFeature.price,
+            status: "allowed" as const,
+            createdAt: new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }),
+          },
+          ...current,
+        ].slice(0, 8),
+      );
+      setNotice(`${formatNaira(captionFeature.price)} deducted. Your caption credit is now ${formatNaira(nextBalance)}.`);
+      pushToast({
+        tone: "success",
+        title: "Caption generated",
+        message: `${formatNaira(captionFeature.price)} deducted from your caption credit.`,
+      });
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Caption could not be generated.";
+      setNotice(message);
+      pushToast({
+        tone: "error",
+        title: "Caption not generated",
+        message,
+      });
     } finally {
       setIsMetering(false);
     }

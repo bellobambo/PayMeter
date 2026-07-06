@@ -50,6 +50,16 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
     }
   }, [isHydrated, router, shouldShowAuthFirst]);
 
+  if (isLiveMode && !session && isAccessRoute) {
+    return (
+      <main className="min-h-screen bg-paper">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8 sm:px-6 lg:px-8">
+          {children}
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-paper">
       <aside className="border-b border-white/10 bg-ink text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 lg:w-72 lg:border-b-0 lg:border-r">

@@ -114,7 +114,7 @@ export default function CaptionPilotWorkspacePage() {
               onClick={() => runBillableAction({ brief, platform, tone })}
               type="button"
             >
-              {isMetering ? "Processing..." : canUseFeature ? `Generate caption - ${formatNaira(feature.price)}` : `Pay ${formatNaira(feature.price)} and generate`}
+              {isMetering ? "Generating..." : canUseFeature ? `Generate caption - ${formatNaira(feature.price)}` : `Add ${formatNaira(feature.price)} credit to generate`}
               {isMetering ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
             </button>
 
@@ -131,7 +131,7 @@ export default function CaptionPilotWorkspacePage() {
             {caption ? (
               <div className="mt-4 rounded-lg border border-mint-100 bg-mint-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mint-700">Generated caption</p>
-                <p className="mt-2 text-sm leading-6 text-ink">{caption}</p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">{caption}</p>
               </div>
             ) : null}
           </div>
@@ -146,7 +146,7 @@ export default function CaptionPilotWorkspacePage() {
           <div className="mt-5 rounded-lg border border-ink/10 bg-paper p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-graphite/60">Pricing</p>
             <p className="mt-2 text-sm leading-6 text-ink">
-              Each generated caption costs {formatNaira(feature.price)}. If you have no credit, pay once and the caption appears immediately.
+              Each generated caption costs {formatNaira(feature.price)}. You need enough caption credit before generation, and credit is deducted only after a caption is produced.
             </p>
           </div>
         </aside>

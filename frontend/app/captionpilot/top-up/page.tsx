@@ -21,7 +21,7 @@ export default function CaptionPilotTopUpPage() {
     return (
       <>
         <CaptionPilotHeader
-          description="Create your writing profile first, then add caption credit or pay during generation."
+          description="Create your writing profile first, then add caption credit before generating."
           eyebrow="Payments"
           title="Start with an account."
         />
@@ -48,7 +48,7 @@ export default function CaptionPilotTopUpPage() {
             <ArrowRight className="size-4" />
           </Link>
         }
-        description="Add caption credit for future generations, or pay per caption from the writing screen."
+        description="Add caption credit for future generations. Each caption deducts from this balance only after it is created."
         eyebrow="Payments"
         title="Add caption credit in naira."
       />
