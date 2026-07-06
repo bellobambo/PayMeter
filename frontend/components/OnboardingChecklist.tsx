@@ -1,14 +1,15 @@
 import { CheckCircle2, Circle, Rocket } from "lucide-react";
 
 type OnboardingChecklistProps = {
+  hasWorkspace: boolean;
   hasFeature: boolean;
 };
 
-export function OnboardingChecklist({ hasFeature }: OnboardingChecklistProps) {
+export function OnboardingChecklist({ hasFeature, hasWorkspace }: OnboardingChecklistProps) {
   const items = [
     {
       label: "Founder workspace created",
-      complete: true,
+      complete: hasWorkspace,
     },
     {
       label: "First billable feature configured",

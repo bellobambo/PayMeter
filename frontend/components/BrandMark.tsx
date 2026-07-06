@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { Gauge } from "lucide-react";
 
 type BrandMarkProps = {
   compact?: boolean;
@@ -15,8 +16,7 @@ export function BrandMark({ compact = false, inverted = false }: BrandMarkProps)
           inverted ? "bg-nomba-yellow text-ink" : "bg-ink text-nomba-yellow",
         )}
       >
-        <span className="absolute h-1 w-6 rotate-[28deg] rounded-full bg-current" />
-        <span className="absolute h-1 w-6 -rotate-[28deg] rounded-full bg-current" />
+        <Gauge className="size-5" strokeWidth={2.6} />
       </div>
       {!compact ? (
         <div className="leading-none">

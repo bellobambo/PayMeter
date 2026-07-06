@@ -8,14 +8,14 @@ export function ContractStrip() {
         <div>
           <div className="flex items-center gap-2">
             <PlugZap className="size-5 text-nomba-gold" />
-            <h2 className="text-xl font-semibold text-ink">Backend handoff contracts</h2>
+            <h2 className="text-xl font-semibold text-ink">Backend contracts</h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-graphite">
-            Frontend is wired around explicit Task 2 contracts, so the team can swap mock mode for live endpoints without
-            redesigning the user journey.
+            PayMeter Studio is wired around founder access, protected feature management, analytics, Nomba-backed wallet
+            onboarding, and the balance check that protects every paid action.
           </p>
         </div>
-        <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Task 3 ready</span>
+        <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Frontend ready</span>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">

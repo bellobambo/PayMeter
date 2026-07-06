@@ -1,35 +1,37 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, Boxes, FileJson2, LayoutDashboard, LogIn, Smartphone, WalletCards } from "lucide-react";
 import clsx from "clsx";
 import { BrandMark } from "@/components/BrandMark";
+import { useConsoleData } from "@/components/console/ConsoleDataProvider";
 import { getApiMode } from "@/lib/api/contracts";
 
 const navItems = [
   {
-    href: "/console",
+    href: "/studio",
     label: "Overview",
     icon: LayoutDashboard,
   },
   {
-    href: "/console/features",
+    href: "/studio/features",
     label: "Features",
     icon: Boxes,
   },
   {
-    href: "/console/analytics",
+    href: "/studio/analytics",
     label: "Analytics",
     icon: BarChart3,
   },
   {
-    href: "/console/integration",
+    href: "/studio/integration",
     label: "Integration",
     icon: FileJson2,
   },
   {
-    href: "/console/access",
+    href: "/studio/access",
     label: "Access",
     icon: LogIn,
   },
@@ -37,24 +39,34 @@ const navItems = [
 
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isHydrated, isLiveMode, session } = useConsoleData();
+  const isAccessRoute = pathname === "/studio/access";
+  const shouldShowAuthFirst = isLiveMode && !session && !isAccessRoute;
+
+  useEffect(() => {
+    if (isHydrated && shouldShowAuthFirst) {
+      router.replace("/studio/access");
+    }
+  }, [isHydrated, router, shouldShowAuthFirst]);
 
   return (
     <main className="min-h-screen bg-paper">
-      <aside className="border-b border-ink/10 bg-white/90 backdrop-blur lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 lg:w-72 lg:border-b-0 lg:border-r">
+      <aside className="border-b border-white/10 bg-ink text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 lg:w-72 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col justify-between p-4 lg:p-6">
           <div>
             <div className="flex items-center justify-between">
-              <BrandMark />
-              <span className="rounded-full border border-ink/10 bg-paper px-3 py-1 text-xs font-semibold text-graphite lg:hidden">
-                Console
+              <BrandMark inverted />
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold text-white/70 lg:hidden">
+                Studio
               </span>
             </div>
 
-            <div className="mt-6 rounded-lg border border-ink/10 bg-paper p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-graphite/60">Product</p>
-              <p className="mt-2 text-lg font-semibold text-ink">PayMeter Console</p>
-              <p className="mt-2 text-sm leading-6 text-graphite">
-                Founder control room for feature pricing, usage analytics, and metering contracts.
+            <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/45">Founder workspace</p>
+              <p className="mt-2 text-lg font-semibold text-white">PayMeter Studio</p>
+              <p className="mt-2 text-sm leading-6 text-white/58">
+                The workspace founders use to price product actions, monitor usage, and connect metering into their own apps.
               </p>
             </div>
 
@@ -67,7 +79,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                   <Link
                     className={clsx(
                       "focus-ring flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition",
-                      selected ? "bg-ink text-white" : "text-graphite hover:bg-ink/5 hover:text-ink",
+                      selected ? "bg-nomba-yellow text-ink" : "text-white/65 hover:bg-white/[0.07] hover:text-white",
                     )}
                     href={item.href}
                     key={item.href}
@@ -86,14 +98,14 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               href="/captionpilot"
             >
               <Smartphone className="size-4" />
-              Open CaptionPilot
+              Open Tunde&apos;s app
             </Link>
-            <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-line">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <div className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
                 <WalletCards className="size-4 text-nomba-gold" />
                 {getApiMode()}
               </div>
-              <p className="mt-2 text-xs leading-5 text-graphite">
+              <p className="mt-2 text-xs leading-5 text-white/55">
                 Payment and metering states are designed for live Nomba handoff.
               </p>
             </div>
@@ -102,7 +114,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <section className="lg:pl-72">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{shouldShowAuthFirst ? null : children}</div>
       </section>
     </main>
   );

@@ -8,7 +8,7 @@ const patterns = [
   },
   {
     title: "Action before outcome",
-    body: "The demo performs the meter check before showing generated output.",
+    body: "Every paid action checks balance first, then reveals the customer outcome.",
     icon: ShieldCheck,
   },
   {
@@ -18,7 +18,7 @@ const patterns = [
   },
   {
     title: "Live-readiness",
-    body: "Mock data is isolated behind a client layer so API integration stays deliberate.",
+    body: "Preview mode and live mode share one product flow, so the handoff stays predictable.",
     icon: RefreshCcw,
   },
 ] as const;
