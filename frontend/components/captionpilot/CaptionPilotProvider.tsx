@@ -23,6 +23,7 @@ type CaptionPilotContextValue = {
   feature: typeof captionFeature;
   user: DemoUser | null;
   balance: number;
+  creditMode: CreditMode;
   notice: string;
   caption: string;
   events: UsageEvent[];
@@ -36,6 +37,7 @@ type CaptionPilotContextValue = {
   runBillableAction: (input: CaptionRequest) => Promise<void>;
   simulateTopUp: (amount: number) => Promise<void>;
   refreshAccount: () => Promise<void>;
+  setCreditMode: (mode: CreditMode) => void;
   copyAccountNumber: () => Promise<void>;
   dismissToast: (id: string) => void;
 };
@@ -45,6 +47,8 @@ type CaptionRequest = {
   platform: string;
   tone: string;
 };
+
+type CreditMode = "confirmed" | "test";
 
 export type CaptionPilotToast = {
   id: string;
@@ -62,9 +66,14 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 type PersistedCaptionPilotState = {
   user: DemoUser | null;
   balance: number;
+  creditMode?: CreditMode;
   caption: string;
   events: UsageEvent[];
 };
+
+function isCreditMode(value: unknown): value is CreditMode {
+  return value === "confirmed" || value === "test";
+}
 
 function readStudioSession() {
   const storedSession = window.localStorage.getItem(STUDIO_SESSION_KEY);
@@ -148,6 +157,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
   const [studioFounderId, setStudioFounderId] = useState<string | null>(null);
   const [user, setUser] = useState<DemoUser | null>(null);
   const [balance, setBalance] = useState(0);
+  const [creditMode, setCreditModeState] = useState<CreditMode>("confirmed");
   const [notice, setNotice] = useState("Create an account to start writing campaign captions.");
   const [caption, setCaption] = useState("");
   const [events, setEvents] = useState<UsageEvent[]>([]);
@@ -171,6 +181,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
           const parsed = JSON.parse(savedState) as PersistedCaptionPilotState;
           setUser(parsed.user ?? null);
           setBalance(Number(parsed.balance) || 0);
+          setCreditModeState(isCreditMode(parsed.creditMode) ? parsed.creditMode : "confirmed");
           setCaption(parsed.caption ?? "");
           setEvents(Array.isArray(parsed.events) ? parsed.events : []);
 
@@ -250,11 +261,12 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       JSON.stringify({
         user,
         balance,
+        creditMode,
         caption,
         events,
       } satisfies PersistedCaptionPilotState),
     );
-  }, [balance, caption, events, isRestored, user]);
+  }, [balance, caption, creditMode, events, isRestored, user]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -265,6 +277,19 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     setToasts((current) => [{ ...toast, id }, ...current].slice(0, 3));
     window.setTimeout(() => dismissToast(id), 5200);
   }, [dismissToast]);
+
+  const setCreditMode = useCallback((mode: CreditMode) => {
+    setCreditModeState(mode);
+    setNotice(mode === "test" ? "Test credit mode is active for this browser." : "Confirmed payment mode is active.");
+    pushToast({
+      tone: "info",
+      title: mode === "test" ? "Test credit enabled" : "Confirmed payment enabled",
+      message:
+        mode === "test"
+          ? "Use test credit to try CaptionPilot without waiting for payment confirmation."
+          : "Credit will refresh from confirmed payments.",
+    });
+  }, [pushToast]);
 
   const refreshAccount = useCallback(async () => {
     if (!user || !isLiveMode) {
@@ -301,7 +326,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
   }, [isLiveMode, pushToast, user]);
 
   useEffect(() => {
-    if (!isRestored || !user || !isLiveMode) {
+    if (!isRestored || !user || !isLiveMode || creditMode === "test") {
       return;
     }
 
@@ -310,7 +335,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     }, 0);
 
     return () => window.clearTimeout(refreshTimer);
-  }, [isLiveMode, isRestored, refreshAccount, user]);
+  }, [creditMode, isLiveMode, isRestored, refreshAccount, user]);
 
   const registerUser = useCallback(async (input: { name: string; email: string }) => {
     if (!input.name.trim()) {
@@ -383,8 +408,9 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     }
 
     const requestKey = `meter_${user.id}_${feature.id}_${Date.now()}`;
+    const usesConfirmedMeter = isLiveMode && creditMode === "confirmed";
 
-    if (!isLiveMode && balance < feature.price) {
+    if (!usesConfirmedMeter && balance < feature.price) {
       setNotice(`Add at least ${formatNaira(feature.price)} credit before generating.`);
       setEvents((current) =>
         [
@@ -410,18 +436,32 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     setCaption("");
 
     try {
-      const meterResult = await meterFeatureUse(
-        {
-          userId: user.id,
-          featureName: feature.name,
-          founderId: studioFounderId ?? undefined,
-        },
-        {
-          balance,
-          featureName: feature.name,
-          featurePrice: feature.price,
-        },
-      );
+      const meterResult = usesConfirmedMeter
+        ? await meterFeatureUse(
+            {
+              userId: user.id,
+              featureName: feature.name,
+              founderId: studioFounderId ?? undefined,
+            },
+            {
+              balance,
+              featureName: feature.name,
+              featurePrice: feature.price,
+            },
+          )
+        : {
+            allowed: true,
+            balance: balance - feature.price,
+            chargedAmount: feature.price,
+            message: "Test credit allowed.",
+            usageEvent: {
+              id: requestKey,
+              featureName: feature.name,
+              amount: feature.price,
+              status: "allowed" as const,
+              createdAt: new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }),
+            },
+          };
 
       if (!meterResult.allowed) {
         setNotice(`Add at least ${formatNaira(feature.price)} credit before generating.`);
@@ -495,7 +535,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsMetering(false);
     }
-  }, [balance, feature, isLiveMode, isMetering, pushToast, studioFounderId, user]);
+  }, [balance, creditMode, feature, isLiveMode, isMetering, pushToast, studioFounderId, user]);
 
   const simulateTopUp = useCallback(async (amount: number) => {
     if (!user || isFunding) {
@@ -503,12 +543,13 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     }
 
     setIsFunding(true);
-    setNotice(isLiveMode ? "Checking for confirmed payment..." : `Confirming ${formatNaira(amount)} payment...`);
+    const usesConfirmedCredit = isLiveMode && creditMode === "confirmed";
+    setNotice(usesConfirmedCredit ? "Checking for confirmed payment..." : `Adding ${formatNaira(amount)} test credit...`);
 
     try {
       await new Promise((resolve) => window.setTimeout(resolve, 900));
 
-      if (isLiveMode) {
+      if (usesConfirmedCredit) {
         await refreshAccount();
         pushToast({
           tone: "info",
@@ -519,16 +560,16 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       }
 
       setBalance((current) => current + amount);
-      setNotice(`${formatNaira(amount)} added to your caption credit.`);
+      setNotice(`${formatNaira(amount)} test credit added to this browser.`);
       pushToast({
         tone: "success",
-        title: "Payment confirmed",
+        title: "Test credit added",
         message: `${formatNaira(amount)} credit is available for captions.`,
       });
     } finally {
       setIsFunding(false);
     }
-  }, [isFunding, isLiveMode, pushToast, refreshAccount, user]);
+  }, [creditMode, isFunding, isLiveMode, pushToast, refreshAccount, user]);
 
   const copyAccountNumber = useCallback(async () => {
     if (!user) {
@@ -549,6 +590,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       feature,
       user,
       balance,
+      creditMode,
       notice,
       caption,
       events,
@@ -562,6 +604,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       runBillableAction,
       simulateTopUp,
       refreshAccount,
+      setCreditMode,
       copyAccountNumber,
       dismissToast,
     }),
@@ -570,6 +613,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       canUseFeature,
       caption,
       copyAccountNumber,
+      creditMode,
       dismissToast,
       events,
       feature,
@@ -581,6 +625,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       registerUser,
       refreshAccount,
       runBillableAction,
+      setCreditMode,
       simulateTopUp,
       toasts,
       user,

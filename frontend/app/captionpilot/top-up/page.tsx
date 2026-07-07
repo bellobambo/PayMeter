@@ -8,7 +8,7 @@ import { useCaptionPilot } from "@/components/captionpilot/CaptionPilotProvider"
 import { formatNaira } from "@/lib/format";
 
 export default function CaptionPilotTopUpPage() {
-  const { user, balance, notice, isFunding, isLiveMode, simulateTopUp, copyAccountNumber } = useCaptionPilot();
+  const { user, balance, creditMode, notice, isFunding, isLiveMode, simulateTopUp, setCreditMode, copyAccountNumber } = useCaptionPilot();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
 
   async function handleTopUp(amount: number) {
@@ -70,9 +70,9 @@ export default function CaptionPilotTopUpPage() {
 
           <div className="space-y-3 bg-white p-5">
             <p className="text-sm leading-6 text-graphite">
-              {isLiveMode
+              {isLiveMode && creditMode === "confirmed"
                 ? "Transfer to this account, then refresh after payment confirmation. Your caption credit updates once the payment is confirmed."
-                : "Choose an amount to add caption credit before writing."}
+                : "Choose an amount to add test credit before writing."}
             </p>
             <button
               className="focus-ring flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-ink/10 bg-paper px-4 text-sm font-semibold text-ink transition hover:bg-ink hover:text-white"
@@ -99,14 +99,28 @@ export default function CaptionPilotTopUpPage() {
           <p className="mt-4 rounded-lg border border-ink/10 bg-paper px-3 py-3 text-sm text-graphite">{notice}</p>
 
           <div className="mt-6">
-            <h2 className="text-xl font-semibold text-ink">{isLiveMode ? "Confirm payment" : "Choose an amount"}</h2>
+            <h2 className="text-xl font-semibold text-ink">{isLiveMode && creditMode === "confirmed" ? "Confirm payment" : "Choose an amount"}</h2>
             <p className="mt-2 text-sm leading-6 text-graphite">
-              {isLiveMode
+              {isLiveMode && creditMode === "confirmed"
                 ? "Once the payment is confirmed, your caption credit and generation access update here."
-                : "Add enough credit for the captions you want to generate today."}
+                : "Add test credit for the captions you want to generate while testing."}
             </p>
 
             {isLiveMode ? (
+              <label className="mt-5 block">
+                <span className="mb-2 block text-sm font-medium text-ink">Credit mode</span>
+                <select
+                  className="input-shell"
+                  onChange={(event) => setCreditMode(event.target.value === "test" ? "test" : "confirmed")}
+                  value={creditMode}
+                >
+                  <option value="confirmed">Confirmed payment</option>
+                  <option value="test">Test credit</option>
+                </select>
+              </label>
+            ) : null}
+
+            {isLiveMode && creditMode === "confirmed" ? (
               <button
                 className="focus-ring mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white transition hover:bg-carbon disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isFunding}
