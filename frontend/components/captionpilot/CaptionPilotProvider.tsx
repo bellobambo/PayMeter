@@ -100,11 +100,6 @@ function formatEventTime(value: string) {
   return date.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
 }
 
-function sentenceCase(value: string) {
-  const cleanValue = value.trim().replace(/\s+/g, " ");
-  return cleanValue ? cleanValue.charAt(0).toUpperCase() + cleanValue.slice(1) : "Your next campaign";
-}
-
 function titleCase(value: string) {
   return value
     .trim()
