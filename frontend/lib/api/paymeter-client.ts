@@ -4,6 +4,7 @@ import type {
   ApiEnvelope,
   BackendAnalyticsResponse,
   BackendFeature,
+  CreatePayoutRequest,
   CreateFeatureRequest,
   FounderAuthRequest,
   FounderAuthResponse,
@@ -11,7 +12,12 @@ import type {
   MeterRequest,
   MeterResponse,
   RegisterDemoUserRequest,
+  SettlementAccount,
+  SettlementBank,
+  SettlementPayout,
+  SettlementSummaryResponse,
   UpdateFeatureRequest,
+  VerifySettlementAccountRequest,
 } from "./contracts";
 import { getApiBaseUrl } from "./contracts";
 
@@ -169,6 +175,104 @@ export async function getFounderAnalytics(token: string | null) {
       ),
     ),
   };
+}
+
+export async function getFounderSettlementSummary(token: string | null) {
+  if (!getApiBaseUrl()) {
+    return {
+      summary: {
+        totalRevenue: 60900,
+        availableBalance: 60900,
+        pendingPayouts: 0,
+        paidOut: 0,
+      },
+      settlementAccount: null,
+      recentPayouts: [],
+    } satisfies SettlementSummaryResponse;
+  }
+
+  return request<SettlementSummaryResponse>("/api/founders/settlement/summary", {
+    method: "GET",
+    token,
+  });
+}
+
+export async function listSettlementBanks(token: string | null) {
+  if (!getApiBaseUrl()) {
+    return [
+      { name: "Access Bank", code: "044" },
+      { name: "GTBank", code: "058" },
+      { name: "Kuda Microfinance Bank", code: "50211" },
+      { name: "Opay", code: "999992" },
+    ] satisfies SettlementBank[];
+  }
+
+  return request<SettlementBank[]>("/api/founders/settlement/banks", {
+    method: "GET",
+    token,
+  });
+}
+
+export async function verifySettlementAccount(input: VerifySettlementAccountRequest, token: string | null) {
+  if (!getApiBaseUrl()) {
+    return {
+      id: "settlement_mock",
+      founderId: "founder_mock_tunde",
+      bankCode: input.bankCode,
+      bankName: input.bankName,
+      accountNumber: input.accountNumber,
+      accountName: "Tunde Founder",
+      verifiedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } satisfies SettlementAccount;
+  }
+
+  return request<SettlementAccount>("/api/founders/settlement/account/verify", {
+    method: "POST",
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createFounderPayout(input: CreatePayoutRequest, token: string | null) {
+  if (!getApiBaseUrl()) {
+    return {
+      payout: {
+        id: `payout_mock_${Date.now()}`,
+        amount: input.amount,
+        status: "processing",
+        bankCode: "058",
+        bankName: "GTBank",
+        accountNumber: "0123456789",
+        accountName: "Tunde Founder",
+        merchantTxRef: `mock_${Date.now()}`,
+        transferReference: null,
+        transferStatus: "PROCESSING",
+        failureReason: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        paidAt: null,
+      },
+      availableAfter: Math.max(0, 60900 - input.amount),
+    } satisfies { payout: SettlementPayout; availableAfter: number };
+  }
+
+  return request<{ payout: SettlementPayout; availableAfter: number }>("/api/founders/settlement/payouts", {
+    method: "POST",
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listFounderPayouts(token: string | null) {
+  if (!getApiBaseUrl()) {
+    return [] satisfies SettlementPayout[];
+  }
+
+  return request<SettlementPayout[]>("/api/founders/settlement/payouts", {
+    method: "GET",
+    token,
+  });
 }
 
 export async function createBillableFeature(input: CreateFeatureRequest, token?: string | null) {

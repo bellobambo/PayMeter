@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Boxes, FileJson2, LayoutDashboard, LogIn, Smartphone, WalletCards } from "lucide-react";
+import { BarChart3, Boxes, FileJson2, Landmark, LayoutDashboard, LogIn, Smartphone, WalletCards } from "lucide-react";
 import clsx from "clsx";
 import { BrandMark } from "@/components/BrandMark";
 import { useConsoleData } from "@/components/console/ConsoleDataProvider";
@@ -24,6 +24,11 @@ const navItems = [
     href: "/studio/analytics",
     label: "Analytics",
     icon: BarChart3,
+  },
+  {
+    href: "/studio/settlements",
+    label: "Settlements",
+    icon: Landmark,
   },
   {
     href: "/studio/integration",
@@ -106,9 +111,11 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             <Link
               className="focus-ring flex min-h-11 items-center justify-center gap-2 rounded-lg bg-nomba-yellow px-3 text-sm font-semibold text-ink transition hover:bg-nomba-gold"
               href="/captionpilot"
+              rel="noreferrer"
+              target="_blank"
             >
               <Smartphone className="size-4" />
-              Open Tunde&apos;s app
+              Open CaptionPilot
             </Link>
             <div className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-white">

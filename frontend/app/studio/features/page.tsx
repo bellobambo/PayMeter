@@ -8,6 +8,35 @@ import { useConsoleData } from "@/components/console/ConsoleDataProvider";
 import { compactNumber, formatNaira } from "@/lib/format";
 import type { BillableFeature } from "@/lib/types";
 
+function PriceInput({
+  className,
+  onChange,
+  value,
+}: {
+  className?: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "flex min-h-12 w-full overflow-hidden rounded-lg border border-ink/10 bg-white text-sm text-ink transition focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10",
+        className,
+      )}
+    >
+      <span className="flex items-center border-r border-ink/10 bg-paper px-3.5 font-semibold text-graphite">₦</span>
+      <input
+        className="min-w-0 flex-1 bg-white px-3.5 py-3 outline-none"
+        inputMode="numeric"
+        min="1"
+        onChange={(event) => onChange(event.target.value)}
+        type="number"
+        value={value}
+      />
+    </div>
+  );
+}
+
 export default function ConsoleFeaturesPage() {
   const { error, features, isLiveMode, session, createFeature, updateFeature, toggleFeature } = useConsoleData();
   const [featureName, setFeatureName] = useState("");
@@ -113,18 +142,7 @@ export default function ConsoleFeaturesPage() {
 
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-ink">Price per use</span>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-graphite">
-                  NGN
-                </span>
-                <input
-                  className="input-shell pl-14"
-                  min="1"
-                  onChange={(event) => setFeaturePrice(event.target.value)}
-                  type="number"
-                  value={featurePrice}
-                />
-              </div>
+              <PriceInput onChange={setFeaturePrice} value={featurePrice} />
             </label>
 
             {featureError ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{featureError}</p> : null}
@@ -190,11 +208,9 @@ export default function ConsoleFeaturesPage() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-graphite/60">Price</p>
                     {isEditing ? (
-                      <input
-                        className="input-shell mt-2"
-                        min="1"
-                        onChange={(event) => setEditDraft((current) => ({ ...current, price: event.target.value }))}
-                        type="number"
+                      <PriceInput
+                        className="mt-2"
+                        onChange={(price) => setEditDraft((current) => ({ ...current, price }))}
                         value={editDraft.price}
                       />
                     ) : (
