@@ -1,0 +1,36 @@
+meta {
+  name: Create API Key
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/founders/api-keys
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "name": "Production API Key"
+  }
+}
+
+tests {
+  test("should create API key successfully", function() {
+    expect(res.status).to.equal(201);
+    expect(res.body.success).to.be.true;
+  });
+  
+  if (res.body && res.body.success && res.body.data && res.body.data.apiKey) {
+    bru.setVar("apiKey", res.body.data.apiKey);
+  }
+  if (res.body && res.body.success && res.body.data && res.body.data.id) {
+    bru.setVar("apiKeyId", res.body.data.id);
+  }
+}

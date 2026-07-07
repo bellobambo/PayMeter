@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/users/{{customerUserId}}/balance
+  url: {{baseUrl}}/api/users/test_user_001/balance
   body: none
   auth: none
+}
+
+headers {
+  x-api-key: {{apiKey}}
 }
 
 tests {
