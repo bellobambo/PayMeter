@@ -101,7 +101,10 @@ export async function requestPayout(req: AuthenticatedRequest, res: Response, ne
     try {
         const founder = getFounder(req);
         const payout = await founderSettlementService.requestPayout({
-            founder,
+            founder: {
+                id: founder.id,
+                name: founder.name || 'Founder',
+            },
             amount: req.body.amount,
         });
 
