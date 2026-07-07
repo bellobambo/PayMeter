@@ -54,6 +54,14 @@ paymeter/
 * **Framework:** Next.js (App Router), React, TypeScript, Tailwind CSS.
 * **API Client Pattern:** Implements a dual client architecture (`mock` vs `live`). You can toggle the live API via environment variables to run against the Node.js server. The client automatically propagates developer sessions for live API requests.
 
+### 🔒 Security Approach
+The team heavily prioritized application security during the hackathon, particularly regarding session management. We implemented a strict security approach by migrating all authentication to `HttpOnly` cookies:
+* **XSS Mitigation:** We eliminated the storage of raw cryptographic JWT tokens in the browser's `localStorage` or memory, completely neutralizing token-stealing Cross-Site Scripting (XSS) attacks.
+* **HttpOnly & Secure Cookies:** Our backend controllers automatically assign a secure `HttpOnly` cookie upon login and registration. This cookie handles all authenticated routes safely.
+* **CORS & Credentials:** The backend explicitly supports dynamic CORS configurations with `credentials: true`, while the Next.js frontend securely attaches cookies using `credentials: "include"`.
+* **Safe Client Hydration:** Instead of managing sensitive tokens, our client-side state explicitly manages only non-sensitive public metadata (e.g., founder name and ID) for hydration.
+* **Strict Secrets:** We stripped out development-only fallback strings for `JWT_SECRET`, meaning the application will strictly error out in production if misconfigured, preventing accidental insecure deployments.
+
 ---
 
 ## ⚡ Quick Start
