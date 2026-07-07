@@ -16,6 +16,15 @@ import {
 import { formatNaira } from "@/lib/format";
 import type { SettlementAccount, SettlementBank, SettlementPayout, SettlementSummaryResponse } from "@/lib/api/contracts";
 
+const FALLBACK_SETTLEMENT_BANKS: SettlementBank[] = [
+  { name: "OPay / Paycom", code: "305" },
+  { name: "GTBank", code: "058" },
+  { name: "Access Bank", code: "044" },
+  { name: "Kuda Microfinance Bank", code: "50211" },
+  { name: "Moniepoint Microfinance Bank", code: "50515" },
+  { name: "PalmPay", code: "999991" },
+];
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Not yet";
@@ -75,30 +84,44 @@ export default function StudioSettlementsPage() {
     setIsLoading(true);
     setError("");
 
+    let hasSavedSettlementAccount = false;
+
     try {
-      const [settlement, bankList] = await Promise.all([
-        getFounderSettlementSummary(token),
-        listSettlementBanks(token).catch(() => []),
-      ]);
+      const settlement = await getFounderSettlementSummary(token);
+      hasSavedSettlementAccount = Boolean(settlement.settlementAccount);
 
       setSummary(settlement.summary);
       setSettlementAccount(settlement.settlementAccount);
       setPayouts(settlement.recentPayouts);
-      setBanks(bankList);
 
       if (settlement.settlementAccount) {
         setBankCode(settlement.settlementAccount.bankCode);
         setBankName(settlement.settlementAccount.bankName);
         setAccountNumber(settlement.settlementAccount.accountNumber);
-      } else if (bankList[0]) {
-        setBankCode(bankList[0].code);
-        setBankName(bankList[0].name);
       }
     } catch (caughtError) {
       const errorMessage = caughtError instanceof Error ? caughtError.message : "Unable to load settlement data.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+
+    try {
+      const bankList = await listSettlementBanks(token);
+      const usableBanks = bankList.length > 0 ? bankList : FALLBACK_SETTLEMENT_BANKS;
+      setBanks(usableBanks);
+
+      if (!hasSavedSettlementAccount && usableBanks[0]) {
+        setBankCode((current) => current || usableBanks[0].code);
+        setBankName((current) => current || usableBanks[0].name);
+      }
+    } catch {
+      setBanks(FALLBACK_SETTLEMENT_BANKS);
+
+      if (!hasSavedSettlementAccount) {
+        setBankCode((current) => current || FALLBACK_SETTLEMENT_BANKS[0].code);
+        setBankName((current) => current || FALLBACK_SETTLEMENT_BANKS[0].name);
+      }
     }
   }, [token]);
 
@@ -232,9 +255,6 @@ export default function StudioSettlementsPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-ink">Settlement account</h2>
-              <p className="mt-2 text-sm leading-6 text-graphite">
-                Verify the founder bank account before any withdrawal can be requested.
-              </p>
             </div>
             <div className="grid size-10 place-items-center rounded-lg bg-nomba-yellow text-ink">
               <ShieldCheck className="size-5" />
@@ -322,7 +342,7 @@ export default function StudioSettlementsPage() {
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-ink">Amount</span>
               <div className="flex min-h-12 w-full overflow-hidden rounded-lg border border-ink/10 bg-white text-sm text-ink transition focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10">
-                <span className="flex items-center border-r border-ink/10 bg-paper px-3.5 font-semibold text-graphite">₦</span>
+                <span className="flex items-center border-r border-ink/10 bg-paper px-3.5 font-semibold text-graphite">NGN</span>
                 <input
                   className="min-w-0 flex-1 bg-white px-3.5 py-3 outline-none"
                   inputMode="numeric"

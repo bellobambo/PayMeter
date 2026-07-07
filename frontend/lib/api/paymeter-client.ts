@@ -63,7 +63,7 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Live backend is taking too long to respond. It may still be waking up, so wait a moment and try again.");
+      throw new Error("This request took too long. Refresh and try again in a moment.");
     }
 
     throw new Error("Could not reach the live backend. Check the backend URL or try again once the service is online.");
@@ -203,7 +203,7 @@ export async function listSettlementBanks(token: string | null) {
       { name: "Access Bank", code: "044" },
       { name: "GTBank", code: "058" },
       { name: "Kuda Microfinance Bank", code: "50211" },
-      { name: "Opay", code: "999992" },
+      { name: "OPay / Paycom", code: "305" },
     ] satisfies SettlementBank[];
   }
 
