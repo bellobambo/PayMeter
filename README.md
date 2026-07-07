@@ -37,6 +37,8 @@ paymeter/
 └── frontend/   # Next.js, TypeScript, and Tailwind CSS Client App
 ```
 
+**Backend Base URL** : https://paymeter.onrender.com/
+
 ### Backend (`/backend`)
 * **Engine:** Node.js, Express, TypeScript.
 * **Database & Auth:** Supabase (PostgreSQL) for transactional data. Password hashing and JWT generation use native Node `crypto` (PBKDF2) to keep dependencies clean and free of heavy native binaries.
