@@ -1,29 +1,56 @@
 import crypto from 'node:crypto';
 
+const CURRENT_ITERATIONS = 310000;
+
 /**
  * Hashes a plaintext password using PBKDF2.
- * Output is in the format salt:hash
+ * Output format: salt:iterations:hash (or legacy salt:hash)
  */
 export function hashPassword(password: string): string {
     const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-    return `${salt}:${hash}`;
+    const hash = crypto.pbkdf2Sync(password, salt, CURRENT_ITERATIONS, 64, 'sha512').toString('hex');
+    return `${salt}:${CURRENT_ITERATIONS}:${hash}`;
 }
 
 /**
- * Verifies a plaintext password against a stored PBKDF2 salt:hash string.
+ * Verifies a plaintext password against a stored PBKDF2 string.
+ * Seamlessly supports legacy formats without breaking existing logins.
  */
 export function verifyPassword(password: string, storedHash: string): boolean {
     const parts = storedHash.split(':');
-    if (parts.length !== 2) {
+    let salt: string;
+    let iterationsStr: string;
+    let hash: string;
+    
+    if (parts.length === 2) {
+        [salt, hash] = parts;
+        iterationsStr = '10000'; // Legacy iteration count
+    } else if (parts.length === 3) {
+        [salt, iterationsStr, hash] = parts;
+    } else {
         return false;
     }
-    const [salt, hash] = parts;
-    if (!salt || !hash) {
+
+    if (!salt || !hash || !iterationsStr) {
         return false;
     }
-    const verifyHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
-    return hash === verifyHash;
+
+    const iterations = parseInt(iterationsStr, 10);
+    if (Number.isNaN(iterations) || iterations <= 0) {
+        return false;
+    }
+
+    const verifyHash = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
+    
+    // Constant time comparison for the hash verification
+    const verifyBuffer = Buffer.from(verifyHash, 'hex');
+    const storedBuffer = Buffer.from(hash, 'hex');
+    
+    if (verifyBuffer.length !== storedBuffer.length) {
+        return false;
+    }
+    
+    return crypto.timingSafeEqual(verifyBuffer, storedBuffer);
 }
 
 /**
@@ -68,13 +95,19 @@ export function verifyToken<T = Record<string, unknown>>(token: string, secret: 
         .digest('base64url');
 
     // Time-safe equality check to protect against timing attacks
-    const signatureBuffer = Buffer.from(signature);
+    let signatureBuffer = Buffer.from(signature);
     const expectedSignatureBuffer = Buffer.from(expectedSignature);
+    const EXPECTED_LENGTH = expectedSignatureBuffer.length;
+    let isLengthMatch = true;
 
-    if (
-        signatureBuffer.length !== expectedSignatureBuffer.length
-    || !crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
-    ) {
+    if (signatureBuffer.length !== EXPECTED_LENGTH) {
+        isLengthMatch = false;
+        signatureBuffer = Buffer.alloc(EXPECTED_LENGTH, 0);
+    }
+
+    const isHashMatch = crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+
+    if (!isLengthMatch || !isHashMatch) {
         return null;
     }
 

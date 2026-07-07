@@ -19,6 +19,7 @@ import {
     verifySettlementAccount,
 } from '../controllers/FounderSettlementController.js';
 import { requireFounderAuth } from '../middlewares/auth.js';
+import { authLimiter } from '../middlewares/rateLimiter.js';
 import {
     validateFounderLogin,
     validateFounderRegister,
@@ -34,8 +35,8 @@ import {
 
 export const founderRoutes = Router();
 
-founderRoutes.post('/register', validateFounderRegister, register);
-founderRoutes.post('/login', validateFounderLogin, login);
+founderRoutes.post('/register', authLimiter, validateFounderRegister, register);
+founderRoutes.post('/login', authLimiter, validateFounderLogin, login);
 founderRoutes.get('/analytics', requireFounderAuth, getAnalytics);
 
 // API key management routes

@@ -9,16 +9,27 @@ import { founderRoutes } from './routes/founder.routes.js';
 import { featureRoutes } from './routes/feature.routes.js';
 import { meterRoutes } from './routes/meter.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { generalLimiter, meterLimiter, webhookLimiter } from './middlewares/rateLimiter.js';
 import { errorResponse, successResponse } from './utils/apiResponse.js';
 
 export const app = express();
+
+// Trust proxy is essential for accurately resolving `req.ip` when running behind a load balancer (e.g. AWS ALB, Cloudflare, Nginx)
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 
+// Apply general rate limiting to all requests
+app.use(generalLimiter);
+
+import { nombaIpWhitelist } from './middlewares/nombaIpWhitelist.js';
+
 app.use(
     '/webhooks/nomba',
+    nombaIpWhitelist,
+    webhookLimiter,
     express.raw({ type: 'application/json', limit: '1mb' }),
     nombaWebhookRoutes,
 );
@@ -64,6 +75,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/nomba', nombaRoutes);
 app.use('/api/founders', founderRoutes);
 app.use('/api/features', featureRoutes);
+app.use('/api/meter', meterLimiter);
 app.use('/api', meterRoutes);
 
 const routeMethods: Record<string, string[]> = {

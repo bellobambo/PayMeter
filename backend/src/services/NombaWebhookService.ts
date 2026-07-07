@@ -196,13 +196,31 @@ export class NombaWebhookService {
         }
 
         const receivedSignature = this.#getHeader(headers, 'nomba-signature');
-        const timestamp = this.#getHeader(headers, 'nomba-timestamp');
+        const timestampStr = this.#getHeader(headers, 'nomba-timestamp');
 
-        if (!receivedSignature || !timestamp) {
+        if (!receivedSignature || !timestampStr) {
             throw new AppError('Missing Nomba webhook signature headers.', 401);
         }
 
-        const generatedSignature = this.#generateSignature(payload, env.nomba.webhookSecret, timestamp);
+        const timestamp = Number(timestampStr);
+        if (Number.isNaN(timestamp)) {
+            throw new AppError('Invalid Nomba webhook timestamp.', 401);
+        }
+
+        // Webhook Replay Protection: Reject if timestamp is older than 5 minutes (300,000 ms)
+        // or if it is suspiciously in the future (allow 1 minute clock drift).
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        const oneMinute = 60 * 1000;
+        
+        if (now - timestamp > fiveMinutes) {
+            throw new AppError('Webhook timestamp is too old. Possible replay attack.', 401);
+        }
+        if (timestamp - now > oneMinute) {
+            throw new AppError('Webhook timestamp is in the future.', 401);
+        }
+
+        const generatedSignature = this.#generateSignature(payload, env.nomba.webhookSecret, timestampStr);
 
         if (!this.#safeEqual(receivedSignature, generatedSignature)) {
             throw new AppError('Invalid Nomba webhook signature.', 401);
@@ -235,10 +253,30 @@ export class NombaWebhookService {
     }
 
     #safeEqual(receivedSignature: string, generatedSignature: string): boolean {
-        const received = Buffer.from(receivedSignature);
+        // We know the expected HMAC-SHA256 Base64 hash is exactly 44 bytes.
+        // To prevent length-based early return timing leaks, we enforce comparison 
+        // with a dummy valid-length buffer if the received string is invalid.
+        
+        let received = Buffer.from(receivedSignature);
         const generated = Buffer.from(generatedSignature);
+        
+        const EXPECTED_LENGTH = 44;
+        let isLengthMatch = true;
 
-        return received.length === generated.length && crypto.timingSafeEqual(received, generated);
+        if (received.length !== EXPECTED_LENGTH) {
+            isLengthMatch = false;
+            // Pad or allocate a dummy buffer to ensure timingSafeEqual still runs
+            received = Buffer.alloc(EXPECTED_LENGTH, 0);
+        }
+        
+        if (generated.length !== EXPECTED_LENGTH) {
+            // Should never happen theoretically as it's generated internally, but safety first
+            return false;
+        }
+
+        const isHashMatch = crypto.timingSafeEqual(received, generated);
+
+        return isLengthMatch && isHashMatch;
     }
 
     async #saveWebhookEvent({
