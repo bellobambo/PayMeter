@@ -1,273 +1,392 @@
 # PayMeter Backend
 
-Core backend engine for PayMeter. Includes **Task 1: Nomba Connection Layer** (creating virtual accounts, webhook listening, transaction verification) and **Task 2: Metering & Balance Engine** (entitlement checks, balance tracking, funding history, analytics, features management).
+This backend is the infrastructure core for PayMeter. It provides founder auth, feature pricing, customer funding, atomic usage metering, analytics, webhook processing, and founder settlements.
+
+The backend is built for the DevCareer x Nomba Hackathon 2026 and uses Nomba payment infrastructure as the money movement layer.
+
+## Stack
+
+```txt
+Node.js
+Express
+TypeScript
+Supabase Postgres
+Nomba APIs
+Bruno API collection
+```
+
+## Core Responsibilities
+
+### 1. Founder Workspace
+
+Founders can register, log in, create billable features, price those features, view analytics, and request settlement.
+
+### 2. Customer Funding
+
+End users receive Nomba virtual accounts. When Nomba sends a confirmed payment webhook, PayMeter credits the matching internal customer balance.
+
+### 3. Metering Engine
+
+Before a paid product action runs, the client calls `/api/meter`. The backend checks feature status, price, and customer balance, then deducts atomically if the action is allowed.
+
+### 4. Founder Settlements
+
+Founder revenue is calculated from successful usage logs. A founder can verify a bank account and request payout. The backend reserves available revenue before calling Nomba transfer APIs.
 
 ## Setup
 
-1. Install dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create `.env` from `.env.example` and fill in Supabase + Nomba sandbox values.
+Create `.env` from `.env.example`:
 
-3. Create the Supabase tables by running `supabase/schema.sql` in the Supabase SQL editor.
+```bash
+cp .env.example .env
+```
 
-4. Start the server:
+Required environment variables:
+
+```txt
+NODE_ENV=development
+PORT=5000
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+JWT_SECRET=
+NOMBA_BASE_URL=
+NOMBA_CLIENT_ID=
+NOMBA_CLIENT_SECRET=
+NOMBA_PARENT_ACCOUNT_ID=
+NOMBA_SUB_ACCOUNT_ID=
+NOMBA_WEBHOOK_SECRET=
+```
+
+Start the server:
 
 ```bash
 npm run dev
 ```
 
-For production builds:
+Build and run production output:
 
 ```bash
 npm run build
 npm start
 ```
 
-Type-check without emitting files:
+Type-check:
 
 ```bash
 npm run check
 ```
 
-## Implemented Routes
+## Supabase Setup
 
-### Nomba Connection Layer (Task 1)
+Run the base schema first:
+
 ```txt
-GET  /health
+backend/supabase/schema.sql
+```
+
+Then run migrations in order:
+
+```txt
+backend/supabase/migrations/001_add_user_email.sql
+backend/supabase/migrations/002_make_phone_number_unique.sql
+backend/supabase/migrations/003_add_nomba_webhook_processing_columns.sql
+backend/supabase/migrations/004_task2_metering_engine.sql
+backend/supabase/migrations/005_founder_settlements.sql
+```
+
+Do not skip `005_founder_settlements.sql` if the Studio settlement page or Bruno settlement requests will be tested. That migration creates:
+
+- `founder_settlement_accounts`
+- `founder_payout_requests`
+- `get_founder_settlement_summary(p_founder_id uuid)`
+- `reserve_founder_payout(p_founder_id uuid, p_amount numeric, p_merchant_tx_ref text)`
+
+## API Reference
+
+### Health
+
+```txt
+GET /
+GET /health
+```
+
+### Founder Auth
+
+```txt
+POST /api/founders/register
+POST /api/founders/login
+GET  /api/founders/analytics
+```
+
+Register:
+
+```json
+{
+  "name": "Tunde Founder",
+  "email": "tunde@paymeter.local",
+  "password": "securepassword123"
+}
+```
+
+Login:
+
+```json
+{
+  "email": "tunde@paymeter.local",
+  "password": "securepassword123"
+}
+```
+
+Successful auth responses return:
+
+```json
+{
+  "success": true,
+  "message": "Founder logged in successfully.",
+  "data": {
+    "founder": {
+      "id": "founder-uuid",
+      "name": "Tunde Founder",
+      "email": "tunde@paymeter.local"
+    },
+    "token": "jwt-token"
+  }
+}
+```
+
+Protected founder routes require:
+
+```txt
+Authorization: Bearer <token>
+```
+
+### Feature Pricing
+
+```txt
+POST  /api/features
+GET   /api/features
+PUT   /api/features/:id
+PATCH /api/features/:id/toggle
+```
+
+Create or update a billable feature:
+
+```json
+{
+  "name": "Caption Generation",
+  "price": 50
+}
+```
+
+The authenticated founder owns the feature. CaptionPilot uses the feature name to request metering.
+
+### Nomba Virtual Accounts
+
+```txt
 POST /api/nomba/virtual-accounts
 GET  /api/nomba/virtual-accounts/:userId
+```
+
+Create or retrieve a virtual account:
+
+```json
+{
+  "userId": "captionpilot_user_001",
+  "name": "Amaka Customer",
+  "email": "amaka@example.com",
+  "companyName": "CaptionPilot",
+  "phoneNumber": "+2348012345678"
+}
+```
+
+The service uses stable `accountRef` values so repeat requests return the same user account when available.
+
+### Webhooks
+
+```txt
+POST /webhooks/nomba
+```
+
+The webhook service:
+
+- Verifies Nomba signature headers.
+- Stores received events.
+- Deduplicates repeated delivery attempts.
+- Verifies the transaction state before crediting.
+- Credits the matching internal user balance through the database function.
+- Records failed webhook processing attempts for follow-up.
+
+### Metering
+
+```txt
+POST /api/meter
+GET  /api/users/:userId/balance
+```
+
+Meter request:
+
+```json
+{
+  "userId": "captionpilot_user_001",
+  "featureName": "Caption Generation",
+  "founderId": "founder-uuid"
+}
+```
+
+Allowed response:
+
+```json
+{
+  "success": true,
+  "message": "Meter check allowed and balance deducted.",
+  "data": {
+    "allowed": true,
+    "deductedAmount": 50,
+    "remainingBalance": 150
+  }
+}
+```
+
+Denied responses use `402` when the customer balance is insufficient.
+
+### Nomba Money APIs
+
+```txt
 GET  /api/nomba/balance
 GET  /api/nomba/balance?subAccountId=<sub-account-id>
 GET  /api/nomba/banks
 POST /api/nomba/bank-lookup
 POST /api/nomba/transfers/bank
 POST /api/nomba/transfers/wallet
-POST /webhooks/nomba
 ```
 
-### Metering & Balance Engine (Task 2)
+These routes expose the lower-level Nomba money capabilities used by the product. For judged founder withdrawals, prefer the protected settlement endpoints below because they validate founder ownership and reserve revenue first.
+
+### Founder Settlements
+
 ```txt
-POST /api/founders/register
-POST /api/founders/login
-GET  /api/founders/analytics
-POST /api/features
-GET  /api/features
-PUT  /api/features/:id
-PATCH /api/features/:id/toggle
-POST /api/meter
-GET  /api/users/:userId/balance
+GET  /api/founders/settlement/summary
+GET  /api/founders/settlement/banks
+GET  /api/founders/settlement/account
+POST /api/founders/settlement/account/verify
+GET  /api/founders/settlement/payouts
+POST /api/founders/settlement/payouts
 ```
 
-Create virtual account request:
+Verify a settlement account:
 
 ```json
 {
-  "userId": "user_123",
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "companyName": "Acme Labs",
-  "phoneNumber": "+2348012345678"
-}
-```
-
-`companyName` and `phoneNumber` are optional. Request payloads use camelCase only.
-
-Successful response:
-
-```json
-{
-  "success": true,
-  "message": "Virtual account created successfully.",
-  "data": {
-    "userId": "user_123",
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "companyName": "Acme Labs",
-    "phoneNumber": "+2348012345678",
-    "accountNumber": "5343270516",
-    "accountName": "John Doe",
-    "bankName": "Nomba",
-    "accountRef": "paymeter_user_user_123",
-    "currency": "NGN",
-    "wasExisting": false
-  }
-}
-```
-
-If the user already has a virtual account, the existing account is returned:
-
-```json
-{
-  "success": true,
-  "message": "Virtual account already exists for this user.",
-  "data": {
-    "userId": "user_123",
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "companyName": "Acme Labs",
-    "phoneNumber": "+2348012345678",
-    "accountNumber": "5343270516",
-    "accountName": "John Doe",
-    "bankName": "Nomba",
-    "accountRef": "paymeter_user_user_123",
-    "currency": "NGN",
-    "wasExisting": true
-  }
-}
-```
-
-Validation error response:
-
-```json
-{
-  "success": false,
-  "message": "Validation failed. Please check the submitted fields.",
-  "errors": {
-    "userId": "userId is required and must be a non-empty string.",
-    "name": "name is required and must be a non-empty string.",
-    "email": "email is required and must be a non-empty string."
-  }
-}
-```
-
-Get virtual account:
-
-```txt
-GET /api/nomba/virtual-accounts/user_123
-```
-
-Successful response:
-
-```json
-{
-  "success": true,
-  "message": "Virtual account fetched successfully.",
-  "data": {
-    "userId": "user_123",
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "companyName": "Acme Labs",
-    "phoneNumber": "+2348012345678",
-    "accountNumber": "5343270516",
-    "accountName": "John Doe",
-    "bankName": "Nomba",
-    "accountRef": "paymeter_user_user_123",
-    "currency": "NGN"
-  }
-}
-```
-
-Fetch parent account balance:
-
-```txt
-GET /api/nomba/balance
-```
-
-Fetch sub-account balance:
-
-```txt
-GET /api/nomba/balance?subAccountId=<sub-account-id>
-```
-
-Fetch supported banks:
-
-```txt
-GET /api/nomba/banks
-```
-
-Verify a recipient bank account before transfer:
-
-```txt
-POST /api/nomba/bank-lookup
-```
-
-```json
-{
-  "accountNumber": "0123456789",
-  "bankCode": "058"
-}
-```
-
-Initiate a bank transfer from the parent account:
-
-```txt
-POST /api/nomba/transfers/bank
-```
-
-```json
-{
-  "amount": 3500,
-  "accountNumber": "0123456789",
-  "accountName": "Recipient Name",
   "bankCode": "058",
-  "merchantTxRef": "paymeter-transfer-001",
-  "senderName": "PayMeter",
-  "narration": "PayMeter payout"
+  "bankName": "GTBank",
+  "accountNumber": "0123456789"
 }
 ```
 
-To initiate from a Nomba sub-account, include `subAccountId` in the same payload. Nomba must enable sub-account transfers on the account before this works.
-
-Initiate a wallet transfer to another Nomba account:
-
-```txt
-POST /api/nomba/transfers/wallet
-```
+Request a payout:
 
 ```json
 {
-  "amount": 3500,
-  "receiverAccountId": "receiver-nomba-account-id",
-  "merchantTxRef": "paymeter-wallet-transfer-001",
-  "senderName": "PayMeter",
-  "narration": "PayMeter wallet transfer"
+  "amount": 5000
 }
 ```
 
-`merchantTxRef` must be unique per transfer. Treat it as the idempotency and reconciliation key for payout initiation.
+Settlement safeguards:
 
-## Nomba Notes Covered
+- The account is verified by Nomba bank lookup before saving.
+- Available balance is computed from successful usage revenue minus reserved, processing, and paid payouts.
+- `reserve_founder_payout` takes an advisory transaction lock per founder to prevent double withdrawal.
+- A unique `merchantTxRef` is generated for Nomba transfer reconciliation.
+- If the transfer initiation fails, the payout record is marked failed instead of silently disappearing.
 
-- Server-to-server auth uses OAuth `client_credentials`.
-- Authenticated Nomba calls send both `Authorization: Bearer <token>` and `accountId`.
-- Access tokens are cached in memory and refreshed before expiry using `/v1/auth/token/refresh`.
-- Balance lookup supports both the parent account and an optional Nomba sub-account.
-- Bank payouts should call `/api/nomba/bank-lookup` first so callers can confirm the recipient account name before initiating the transfer.
-- Virtual accounts use stable `accountRef` values generated from the internal user ID.
-- The current virtual account flow does not set `expectedAmount`/`amount`, because PayMeter top-ups should accept arbitrary transfer amounts.
-- The Nomba webhook endpoint is `POST /webhooks/nomba`.
-- Webhooks are verified with `nomba-signature` and `nomba-timestamp`, saved before processing, deduplicated by request/transaction ID, then verified against Nomba before producing the Task 2 payment handoff.
-- Sub-account creation is not implemented here because this service expects the team's existing sub-account ID in `NOMBA_SUB_ACCOUNT_ID`.
+## Database Functions
 
-## Metering & Balance Notes (Task 2)
+### `check_and_deduct_meter`
 
-- **Atomic Checks**: Metering queries use `SELECT FOR UPDATE` database locks within the Postgres `check_and_deduct_meter` stored procedure, ensuring atomic transactions and avoiding double-spend race conditions on rapid clicking.
-- **Idempotency Guard**: Confirmed top-ups check for existing transactions inside `credit_user_balance` to prevent double-crediting on webhook processor retries.
-- **Zero-Dependency Auth**: Leverages native Node.js `crypto` (PBKDF2 and HMAC-SHA256) for password security and JWT signing, keeping build size small and free of native C++ binary requirements (like standard bcrypt).
-- **History Auditing**: Separate append-only logs are written for feature usage (`usage_logs`) and wallet deposits (`funding_history`) to enable clear revenue reporting.
+Used by `/api/meter`.
 
-## Bruno API Collection
+Guarantees:
 
-Import the `bruno/` folder in Bruno.
+- Finds the requested feature for the founder.
+- Rejects inactive or missing features.
+- Locks the balance row.
+- Rejects insufficient balance.
+- Deducts exactly once within the transaction.
+- Writes the usage log that powers analytics and settlements.
 
-Use the `Local` environment. It defines:
+### `credit_user_balance`
+
+Used by the webhook processor.
+
+Guarantees:
+
+- Creates a balance row when needed.
+- Deduplicates webhook crediting.
+- Writes funding history.
+
+### `get_founder_settlement_summary`
+
+Used by settlement summary.
+
+Calculates:
+
+- Total successful usage revenue.
+- Pending payouts.
+- Paid payouts.
+- Available balance.
+
+### `reserve_founder_payout`
+
+Used before initiating a Nomba transfer.
+
+Guarantees:
+
+- Settlement account must exist.
+- Requested amount must be available.
+- Revenue is reserved before external transfer initiation.
+- Concurrent payout requests from the same founder cannot overspend the same revenue.
+
+## Bruno Collection
+
+Open this folder in Bruno:
 
 ```txt
-baseUrl=http://localhost:5000
+backend/bruno
 ```
 
-Current request folders:
+Use the `Local` environment. Recommended execution order:
 
 ```txt
-Health
-Nomba Virtual Accounts
-Nomba Money
-Nomba Webhooks
-Founders Auth
-Features
-Metering
+1. Health / Health Check
+2. Founders Auth / Register Founder or Login Founder
+3. Features / Create Feature
+4. Nomba Virtual Accounts / Create Virtual Account
+5. Metering / Check Meter
+6. Founders Auth / Get Founder Analytics
+7. Founder Settlements / Get Settlement Summary
+8. Founder Settlements / Verify Settlement Account
+9. Founder Settlements / Request Payout
 ```
+
+The auth requests store `token` and `founderId` in Bruno variables for the protected requests.
+
+## Engineering Notes
+
+- Auth uses Node `crypto` primitives for password hashing and JWT signing.
+- Nomba access tokens are cached and refreshed server-side.
+- Webhook payloads are processed with verification and deduplication.
+- Metering and settlement reservations are enforced in Postgres, not only in application memory.
+- Raw Nomba money routes are useful for infrastructure testing, but founder payout UX should use `/api/founders/settlement/*`.
+
+## Known Operational Requirements
+
+- Nomba sandbox/test keys should be used during development.
+- Real money testing must use the correct Nomba environment and team-approved accounts.
+- Supabase migrations must be applied before the corresponding route family is tested.
+- The frontend live mode must point to this backend through `NEXT_PUBLIC_API_BASE_URL`.

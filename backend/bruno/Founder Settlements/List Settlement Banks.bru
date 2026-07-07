@@ -1,0 +1,22 @@
+meta {
+  name: List Settlement Banks
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/founders/settlement/banks
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("should return banks supported for settlement", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+  });
+}

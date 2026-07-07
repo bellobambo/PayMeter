@@ -16,14 +16,14 @@ headers {
 
 body:json {
   {
-    "userId": "test_user_001",
-    "featureName": "Caption Generation"
+    "userId": "{{customerUserId}}",
+    "featureName": "{{featureName}}",
+    "founderId": "{{founderId}}"
   }
 }
 
 tests {
   test("should execute entitlement check", function() {
-    // Expect 200 (if has balance) or 402 (if insufficient balance)
     expect([200, 402]).to.include(res.status);
   });
 }

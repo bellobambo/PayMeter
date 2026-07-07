@@ -16,15 +16,28 @@ headers {
 
 body:json {
   {
-    "name": "Tunde Founder",
-    "email": "tunde@paymeter.local",
-    "password": "securepassword123"
+    "name": "{{founderName}}",
+    "email": "{{founderEmail}}",
+    "password": "{{founderPassword}}"
   }
 }
 
 tests {
-  test("should register successfully", function() {
-    expect(res.status).to.equal(201);
+  test("should register or tell us the founder already exists", function() {
+    expect([201, 409]).to.include(res.status);
+    if (res.status === 201) {
+      expect(res.body.success).to.be.true;
+    }
+  });
+
+  if (res.body && res.body.success && res.body.data && res.body.data.token) {
+    bru.setVar("token", res.body.data.token);
+  }
+
+  if (res.body && res.body.success && res.body.data && res.body.data.founder && res.body.data.founder.id) {
+    bru.setVar("founderId", res.body.data.founder.id);
+  }
+}
     expect(res.body.success).to.be.true;
   });
   

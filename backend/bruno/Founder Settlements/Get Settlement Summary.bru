@@ -1,0 +1,23 @@
+meta {
+  name: Get Settlement Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/founders/settlement/summary
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("should return the founder settlement summary", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+    expect(res.body.data.summary).to.be.an("object");
+  });
+}

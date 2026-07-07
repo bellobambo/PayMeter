@@ -1,0 +1,23 @@
+meta {
+  name: List Payouts
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/founders/settlement/payouts
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("should return founder payout history", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.be.true;
+    expect(res.body.data).to.be.an("array");
+  });
+}
