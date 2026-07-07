@@ -61,6 +61,7 @@ export async function register(req: AuthenticatedRequest, res: Response, next: N
                     name: founder.name,
                     email: founder.email,
                 },
+                token,
             },
         });
     } catch (error) {
@@ -107,6 +108,7 @@ export async function login(req: AuthenticatedRequest, res: Response, next: Next
                     name: founder.name,
                     email: founder.email,
                 },
+                token,
             },
         });
     } catch (error) {

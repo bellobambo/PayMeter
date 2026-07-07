@@ -76,7 +76,7 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
       totalRevenue: analyticsOverride?.totalRevenue ?? totalRevenue,
       totalUsage,
       activeFeatures,
-      activeUsers: analyticsOverride?.activeUsers ?? (isLiveMode && !session ? 0 : 184),
+      activeUsers: analyticsOverride?.activeUsers ?? (isLiveMode && !session ? 0 : 0),
     };
   }, [analyticsOverride, features, isLiveMode, session]);
 
@@ -232,11 +232,11 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
           current.map((feature) =>
             feature.id === featureId
               ? {
-                  ...feature,
-                  name: updated?.name ?? input.name.trim(),
-                  price: updated?.price ?? input.price,
-                  active: updated?.active ?? feature.active,
-                }
+                ...feature,
+                name: updated?.name ?? input.name.trim(),
+                price: updated?.price ?? input.price,
+                active: updated?.active ?? feature.active,
+              }
               : feature,
           ),
         );
