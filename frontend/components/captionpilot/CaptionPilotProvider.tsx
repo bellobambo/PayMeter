@@ -234,6 +234,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
   const isLiveMode = Boolean(getApiBaseUrl());
   const [feature, setFeature] = useState(captionFeature);
   const [studioFounderId, setStudioFounderId] = useState<string | null>(null);
+  const [studioToken, setStudioToken] = useState<string | null>(null);
   const [user, setUser] = useState<DemoUser | null>(null);
   const [balance, setBalance] = useState(0);
   const [creditMode, setCreditModeState] = useState<CreditMode>("confirmed");
@@ -252,6 +253,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     const restoreTimer = window.setTimeout(() => {
       const studioSession = readStudioSession();
       setStudioFounderId(studioSession?.founder.id ?? null);
+      setStudioToken(studioSession?.token ?? null);
 
       const savedState = window.localStorage.getItem(CAPTIONPILOT_STORAGE_KEY);
 
@@ -311,6 +313,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       setStudioFounderId(studioSession?.founder.id ?? null);
 
       const studioToken = studioSession?.token ?? null;
+      setStudioToken(studioToken);
 
       if (studioToken) {
         void syncFeatureConfig(studioToken);
@@ -376,7 +379,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     }
 
     try {
-      const snapshot = await fetchEndUserBalance(user.id);
+      const snapshot = await fetchEndUserBalance(user.id, studioToken);
 
       if (!snapshot) {
         return;
@@ -402,7 +405,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
         message,
       });
     }
-  }, [isLiveMode, pushToast, user]);
+  }, [isLiveMode, pushToast, studioToken, user]);
 
   useEffect(() => {
     if (!isRestored || !user || !isLiveMode || creditMode === "test") {
@@ -437,9 +440,20 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       return false;
     }
 
+    if (isLiveMode && !studioToken) {
+      const message = "Your workspace session expired. Reopen CaptionPilot from Studio and try again.";
+      setNotice(message);
+      pushToast({
+        tone: "error",
+        title: "Session needed",
+        message,
+      });
+      return false;
+    }
+
     try {
       setIsRegistering(true);
-      const registered = await registerEndUser(input);
+      const registered = await registerEndUser(input, studioToken);
       setUser(registered);
       setNotice("Your account is ready. Add caption credit before generating.");
       pushToast({
@@ -460,7 +474,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsRegistering(false);
     }
-  }, [pushToast]);
+  }, [isLiveMode, pushToast, studioToken]);
 
   const runBillableAction = useCallback(async (input: CaptionRequest) => {
     if (!user || isMetering) {
@@ -488,6 +502,17 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
 
     const requestKey = `meter_${user.id}_${feature.id}_${Date.now()}`;
     const usesConfirmedMeter = isLiveMode && creditMode === "confirmed";
+
+    if (usesConfirmedMeter && !studioToken) {
+      const message = "Your workspace session expired. Reopen CaptionPilot from Studio and try again.";
+      setNotice(message);
+      pushToast({
+        tone: "error",
+        title: "Session needed",
+        message,
+      });
+      return;
+    }
 
     if (!usesConfirmedMeter && balance < feature.price) {
       setNotice(`Add at least ${formatNaira(feature.price)} credit before generating.`);
@@ -527,6 +552,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
               featureName: feature.name,
               featurePrice: feature.price,
             },
+            studioToken,
           )
         : {
             allowed: true,
@@ -614,7 +640,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsMetering(false);
     }
-  }, [balance, creditMode, feature, isLiveMode, isMetering, pushToast, studioFounderId, user]);
+  }, [balance, creditMode, feature, isLiveMode, isMetering, pushToast, studioFounderId, studioToken, user]);
 
   const simulateTopUp = useCallback(async (amount: number) => {
     if (!user || isFunding) {

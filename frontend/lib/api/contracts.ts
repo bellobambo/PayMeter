@@ -27,6 +27,23 @@ export type FounderAuthResponse = {
   token: string;
 };
 
+export type ApiKeyRecord = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type CreateApiKeyRequest = {
+  name: string;
+};
+
+export type CreateApiKeyResponse = ApiKeyRecord & {
+  apiKey: string;
+};
+
 export type BackendFeature = {
   id: string;
   name: string;
@@ -175,6 +192,24 @@ export const taskTwoContracts = [
     path: "/api/founders/analytics",
     owner: "PayMeter backend",
     purpose: "Return revenue, active users, and per-feature usage.",
+  },
+  {
+    method: "POST",
+    path: "/api/founders/api-keys",
+    owner: "PayMeter backend",
+    purpose: "Generate a one-time secret key for founder server-to-server integrations.",
+  },
+  {
+    method: "GET",
+    path: "/api/founders/api-keys",
+    owner: "PayMeter backend",
+    purpose: "List API-key metadata without ever returning stored key secrets.",
+  },
+  {
+    method: "DELETE",
+    path: "/api/founders/api-keys/:id",
+    owner: "PayMeter backend",
+    purpose: "Revoke a founder integration key immediately.",
   },
   {
     method: "GET",

@@ -2,8 +2,11 @@ import { createFeature as mockCreateFeature, registerDemoUser as mockRegisterDem
 import type { BillableFeature, DemoUser, Founder } from "@/lib/types";
 import type {
   ApiEnvelope,
+  ApiKeyRecord,
   BackendAnalyticsResponse,
   BackendFeature,
+  CreateApiKeyRequest,
+  CreateApiKeyResponse,
   CreatePayoutRequest,
   CreateFeatureRequest,
   FounderAuthRequest,
@@ -134,6 +137,50 @@ export async function loginFounder(input: FounderAuthRequest) {
   return request<FounderAuthResponse>("/api/founders/login", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function createFounderApiKey(input: CreateApiKeyRequest, token: string | null) {
+  if (!getApiBaseUrl()) {
+    const suffix = Math.random().toString(16).slice(2, 14).padEnd(12, "0");
+
+    return {
+      id: `api_key_mock_${Date.now()}`,
+      name: input.name.trim(),
+      keyPrefix: `pm_live_${suffix.slice(0, 6)}`,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      apiKey: `pm_live_${suffix}${Date.now().toString(16)}previewonly`,
+    } satisfies CreateApiKeyResponse;
+  }
+
+  return request<CreateApiKeyResponse>("/api/founders/api-keys", {
+    method: "POST",
+    token,
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listFounderApiKeys(token: string | null) {
+  if (!getApiBaseUrl()) {
+    return [] satisfies ApiKeyRecord[];
+  }
+
+  return request<ApiKeyRecord[]>("/api/founders/api-keys", {
+    method: "GET",
+    token,
+  });
+}
+
+export async function revokeFounderApiKey(apiKeyId: string, token: string | null) {
+  if (!getApiBaseUrl()) {
+    return null;
+  }
+
+  return request<null>(`/api/founders/api-keys/${apiKeyId}`, {
+    method: "DELETE",
+    token,
   });
 }
 
@@ -316,7 +363,7 @@ export async function toggleBillableFeature(featureId: string, token?: string | 
   return mapFeature(feature);
 }
 
-export async function registerEndUser(input: RegisterDemoUserRequest) {
+export async function registerEndUser(input: RegisterDemoUserRequest, token?: string | null) {
   if (!getApiBaseUrl()) {
     return mockRegisterDemoUser(input);
   }
@@ -332,6 +379,7 @@ export async function registerEndUser(input: RegisterDemoUserRequest) {
     bankName: string;
   }>("/api/nomba/virtual-accounts", {
     method: "POST",
+    token,
     body: JSON.stringify({
       userId,
       name: input.name,
@@ -351,7 +399,7 @@ export async function registerEndUser(input: RegisterDemoUserRequest) {
   } satisfies DemoUser;
 }
 
-export async function fetchEndUserBalance(userId: string) {
+export async function fetchEndUserBalance(userId: string, token?: string | null) {
   if (!getApiBaseUrl()) {
     return null;
   }
@@ -379,6 +427,7 @@ export async function fetchEndUserBalance(userId: string) {
     }>;
   }>(`/api/users/${userId}/balance`, {
     method: "GET",
+    token,
   });
 }
 
@@ -389,6 +438,7 @@ export async function meterFeatureUse(
     featureName: string;
     featurePrice: number;
   },
+  token?: string | null,
 ) {
   if (!getApiBaseUrl()) {
     await wait(520);
@@ -433,6 +483,7 @@ export async function meterFeatureUse(
     message?: string;
   }>("/api/meter", {
     method: "POST",
+    token,
     body: JSON.stringify(input),
   });
 
