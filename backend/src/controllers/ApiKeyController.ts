@@ -6,6 +6,36 @@ import { successResponse } from '../utils/apiResponse.js';
 import { AppError } from '../utils/AppError.js';
 import type { AuthenticatedRequest } from '../middlewares/auth.js';
 
+type SupabaseSchemaError = {
+    message?: string;
+    code?: string;
+};
+
+function throwApiKeyStorageError(error: SupabaseSchemaError | null | undefined, fallback: string): never {
+    const message = error?.message ?? '';
+    const code = error?.code ?? '';
+    const missingApiKeysTable =
+        code === 'PGRST205' ||
+        code === '42P01' ||
+        message.includes('api_keys') ||
+        message.toLowerCase().includes('schema cache');
+
+    if (missingApiKeysTable) {
+        throw new AppError(
+            'API-key storage is not ready. Run backend/supabase/migrations/005_api_keys.sql on the deployed Supabase database, then refresh the Supabase schema cache if needed.',
+            500,
+            {
+                migration: 'backend/supabase/migrations/005_api_keys.sql',
+                database: message,
+            },
+        );
+    }
+
+    throw new AppError(fallback, 500, {
+        database: message,
+    });
+}
+
 export async function createApiKey(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
         const founderId = req.founder?.id;
@@ -33,7 +63,7 @@ export async function createApiKey(req: AuthenticatedRequest, res: Response, nex
             .single();
 
         if (error || !apiKey) {
-            throw new AppError(`Failed to generate API key: ${error?.message || 'Database insert failed.'}`, 500);
+            throwApiKeyStorageError(error, 'Failed to generate API key.');
         }
 
         return successResponse(res, {
@@ -68,7 +98,7 @@ export async function listApiKeys(req: AuthenticatedRequest, res: Response, next
             .order('created_at', { ascending: false });
 
         if (error) {
-            throw new AppError(`Failed to list API keys: ${error.message}`, 500);
+            throwApiKeyStorageError(error, 'Failed to list API keys.');
         }
 
         return successResponse(res, {
@@ -105,7 +135,7 @@ export async function deleteApiKey(req: AuthenticatedRequest, res: Response, nex
             .maybeSingle();
 
         if (fetchError) {
-            throw new AppError(`Database error: ${fetchError.message}`, 500);
+            throwApiKeyStorageError(fetchError, 'Unable to verify API key ownership.');
         }
 
         if (!existing) {
@@ -119,7 +149,7 @@ export async function deleteApiKey(req: AuthenticatedRequest, res: Response, nex
             .eq('founder_id', founderId);
 
         if (deleteError) {
-            throw new AppError(`Failed to delete API key: ${deleteError.message}`, 500);
+            throwApiKeyStorageError(deleteError, 'Failed to delete API key.');
         }
 
         return successResponse(res, {

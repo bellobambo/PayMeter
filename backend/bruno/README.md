@@ -57,6 +57,8 @@ payoutAmount
 
 Register/Login stores `token` and `founderId` automatically. Protected Studio and settlement requests use the captured token.
 
+If the deployed API returns `public.api_keys` or schema-cache errors, the route is deployed but the production Supabase migration is not visible to PostgREST yet. Run the migration above; it includes `notify pgrst, 'reload schema';`.
+
 ## Settlement Note
 
 Before testing `Founder Settlements`, run:

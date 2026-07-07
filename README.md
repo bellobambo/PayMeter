@@ -88,6 +88,8 @@ npm install
    - `check_and_deduct_meter` database function (the atomic balance deduct procedure)
    - `credit_user_balance` database function (deduplicated webhook balance funding)
 
+If Studio shows `public.api_keys` or schema-cache errors after the backend is deployed, the API route is live but the production Supabase database has not exposed the `api_keys` table yet. Run `backend/supabase/migrations/005_api_keys.sql`; it also asks Supabase/PostgREST to reload its schema cache.
+
 ### 4. Configuration (Environment Variables)
 
 #### Backend Setup

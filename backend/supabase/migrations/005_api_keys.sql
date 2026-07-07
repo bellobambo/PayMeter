@@ -13,3 +13,6 @@ create table if not exists public.api_keys (
 -- Create indexes for performance
 create index if not exists idx_api_keys_founder_id on public.api_keys(founder_id);
 create index if not exists idx_api_keys_key_hash on public.api_keys(key_hash);
+
+-- Refresh Supabase/PostgREST schema cache after creating the table.
+notify pgrst, 'reload schema';

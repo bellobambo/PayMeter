@@ -153,6 +153,55 @@ Protected founder routes require:
 Authorization: Bearer <token>
 ```
 
+### API Keys
+
+```txt
+POST   /api/founders/api-keys
+GET    /api/founders/api-keys
+DELETE /api/founders/api-keys/:id
+```
+
+Create an API key:
+
+```json
+{
+  "name": "CaptionPilot production"
+}
+```
+
+Successful creation returns the raw key once:
+
+```json
+{
+  "success": true,
+  "message": "API key created successfully. Make sure to copy it now, as it will not be shown again.",
+  "data": {
+    "id": "api-key-uuid",
+    "name": "CaptionPilot production",
+    "keyPrefix": "pm_live_ab12",
+    "isActive": true,
+    "createdAt": "2026-07-07T12:00:00.000Z",
+    "apiKey": "pm_live_full_secret_returned_once"
+  }
+}
+```
+
+Founder app backends should store the raw key in environment variables and call protected integration routes with either:
+
+```txt
+x-api-key: pm_live_full_secret
+```
+
+or:
+
+```txt
+Authorization: Bearer pm_live_full_secret
+```
+
+The database stores only `key_hash` and `key_prefix`, so full API keys cannot be recovered after creation.
+
+If Studio shows that `public.api_keys` is missing after deployment, run `backend/supabase/migrations/005_api_keys.sql` in the production Supabase SQL editor. The migration ends with `notify pgrst, 'reload schema';` so the Supabase API can see the new table immediately.
+
 ### Feature Pricing
 
 ```txt
