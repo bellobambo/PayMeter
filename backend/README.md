@@ -35,24 +35,24 @@ npm run check
 
 ## Implemented Routes
 
-### Nomba Connection Layer (Task 1)
+### Nomba Connection Layer (Task 1 - Authenticated via API Key or JWT)
 ```txt
-GET  /health
+GET  /health (Public)
 POST /api/nomba/virtual-accounts
 GET  /api/nomba/virtual-accounts/:userId
 GET  /api/nomba/balance
 GET  /api/nomba/balance?subAccountId=<sub-account-id>
-GET  /api/nomba/banks
+GET  /api/nomba/banks (Public)
 POST /api/nomba/bank-lookup
 POST /api/nomba/transfers/bank
 POST /api/nomba/transfers/wallet
-POST /webhooks/nomba
+POST /webhooks/nomba (Public)
 ```
 
-### Metering & Balance Engine (Task 2)
+### Metering & Balance Engine (Task 2 - Authenticated via API Key or JWT)
 ```txt
-POST /api/founders/register
-POST /api/founders/login
+POST /api/founders/register (Public)
+POST /api/founders/login (Public)
 GET  /api/founders/analytics
 POST /api/features
 GET  /api/features
@@ -60,6 +60,13 @@ PUT  /api/features/:id
 PATCH /api/features/:id/toggle
 POST /api/meter
 GET  /api/users/:userId/balance
+```
+
+### API Key Management (Authenticated via JWT)
+```txt
+POST   /api/founders/api-keys
+GET    /api/founders/api-keys
+DELETE /api/founders/api-keys/:id
 ```
 
 Create virtual account request:

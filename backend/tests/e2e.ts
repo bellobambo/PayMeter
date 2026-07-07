@@ -203,7 +203,9 @@ async function runHttpTests() {
 
             // 7. GET /api/users/:userId/balance via HTTP
             console.log(`\n7. GET /api/users/${internalUserId}/balance...`);
-            const balRes = await fetch(`http://localhost:${PORT}/api/users/${internalUserId}/balance`);
+            const balRes = await fetch(`http://localhost:${PORT}/api/users/${internalUserId}/balance`, {
+                headers: { 'x-api-key': apiKey },
+            });
             const balData = (await balRes.json()) as any;
             if (!balRes.ok || !balData.success) {
                 throw new Error(`Failed to fetch user balance: ${JSON.stringify(balData)}`);

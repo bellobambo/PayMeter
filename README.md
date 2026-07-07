@@ -14,6 +14,7 @@ PayMeter provides a complete showcase of the infrastructure provider and a reali
 *Target URL:* `/studio` (redirects from `/` and `/founder`)
 * **Launch Readiness & Access:** Founders register and log in to get their authentication credentials.
 * **Feature Management:** Create, update, price, and toggle features dynamically (e.g. `$2` per API request, or `50 NGN` per AI image generated).
+* **API Key Management:** Generate, view, list, and revoke API keys (prefixed with `pm_live_`) to secure server-to-server metering and account integrations.
 * **Analytics Dashboard:** Get instant visual insights into platform revenue, API usage logs, and active customer counts.
 * **API Handoff Contracts:** Standardized code and API schema templates for integrating PayMeter into any application.
 
@@ -45,10 +46,11 @@ paymeter/
   * **Secure Webhooks:** Verification of payload authenticity using the `nomba-signature` header, alongside deduplication to prevent double-crediting.
   * **Payouts:** Bank/wallet transfers via Nomba Money APIs, complete with recipient bank lookups.
 * **Atomic Metering Engine:** Utilizes database-level locks (`SELECT FOR UPDATE` inside a Postgres stored procedure) to guarantee atomic balance deduction and eliminate double-spend race conditions.
+* **Flexible Authentication:** Endpoints called by client servers support dual-auth; they accept both API Keys (via `x-api-key` or `Authorization: Bearer pm_live_...` headers) for secure backend integrations, and JWT tokens for web dashboard sandbox testing.
 
 ### Frontend (`/frontend`)
 * **Framework:** Next.js (App Router), React, TypeScript, Tailwind CSS.
-* **API Client Pattern:** Implements a dual client architecture (`mock` vs `live`). You can toggle the live API via environment variables to run against the Node.js server.
+* **API Client Pattern:** Implements a dual client architecture (`mock` vs `live`). You can toggle the live API via environment variables to run against the Node.js server. The client automatically propagates developer sessions for live API requests.
 
 ---
 
@@ -78,6 +80,7 @@ npm install
 1. Go to your Supabase project's SQL editor.
 2. Copy the contents of `backend/supabase/schema.sql` and run the script. This creates:
    - `founders` table
+   - `api_keys` table (stores cryptographically hashed API keys for programmatic integrations)
    - `features` table
    - `virtual_accounts` table
    - `balances` table
@@ -128,17 +131,17 @@ Visit the dashboard at `http://localhost:3000` (or the port specified by Next.js
 
 ## 🔗 Integrated API Reference
 
-### Virtual Accounts & Nomba Integrations
+### Virtual Accounts & Nomba Integrations (Authenticated via API Key or JWT)
 * `POST /api/nomba/virtual-accounts` - Create or retrieve a virtual account for a user.
 * `GET /api/nomba/virtual-accounts/:userId` - Fetch an existing virtual account.
 * `GET /api/nomba/balance` - Get parent/sub-account Nomba wallet balances.
-* `GET /api/nomba/banks` - Get list of supported payout banks.
+* `GET /api/nomba/banks` - Get list of supported payout banks (Public).
 * `POST /api/nomba/bank-lookup` - Resolve bank account details.
 * `POST /api/nomba/transfers/bank` - Payout to a bank account.
 * `POST /api/nomba/transfers/wallet` - Payout/transfer to another Nomba account.
-* `POST /webhooks/nomba` - Nomba payment webhook receiver.
+* `POST /webhooks/nomba` - Nomba payment webhook receiver (Public).
 
-### Metering & Balances
+### Metering & Balances (Authenticated via API Key or JWT)
 * `POST /api/meter` - Check and deduct balance for a specific feature usage.
 * `GET /api/users/:userId/balance` - Get a user's current PayMeter ledger balance.
 * `POST /api/features` - Create a new billable feature.
@@ -147,9 +150,12 @@ Visit the dashboard at `http://localhost:3000` (or the port specified by Next.js
 * `PATCH /api/features/:id/toggle` - Toggle deactivation state.
 
 ### Founder Auth & Studio
-* `POST /api/founders/register` - Founder registration.
-* `POST /api/founders/login` - Founder login.
-* `GET /api/founders/analytics` - Fetch aggregated revenue and API usage logs.
+* `POST /api/founders/register` - Founder registration (Public).
+* `POST /api/founders/login` - Founder login (Public).
+* `GET /api/founders/analytics` - Fetch aggregated revenue and API usage logs (JWT/API key auth).
+* `POST /api/founders/api-keys` - Generate a new founder API Key (JWT auth).
+* `GET /api/founders/api-keys` - List metadata of generated API keys (JWT auth).
+* `DELETE /api/founders/api-keys/:id` - Revoke an API key (JWT auth).
 
 ---
 

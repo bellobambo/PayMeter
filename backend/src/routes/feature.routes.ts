@@ -6,13 +6,13 @@ import {
     toggleFeature,
     updateFeature,
 } from '../controllers/FeatureController.js';
-import { requireFounderAuth } from '../middlewares/auth.js';
+import { requireApiKey } from '../middlewares/apiKeyAuth.js';
 import { validateFeature } from '../validators/feature.validators.js';
 
 export const featureRoutes = Router();
 
 // Secure all feature routes
-featureRoutes.use(requireFounderAuth);
+featureRoutes.use(requireApiKey);
 
 featureRoutes.post('/', validateFeature, createFeature);
 featureRoutes.get('/', listFeatures);

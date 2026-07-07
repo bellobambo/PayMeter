@@ -11,6 +11,7 @@ import {
     listNombaBanks,
     lookupNombaBankAccount,
 } from '../controllers/NombaMoneyController.js';
+import { requireApiKey } from '../middlewares/apiKeyAuth.js';
 import {
     validateBankAccountLookup,
     validateBankTransfer,
@@ -21,6 +22,10 @@ import {
 } from '../validators/nomba.validators.js';
 
 export const nombaRoutes = Router();
+
+// Secure all Nomba routes (Virtual Accounts, Balances, Payouts)
+nombaRoutes.use(requireApiKey);
+
 
 nombaRoutes.post('/virtual-accounts', validateCreateVirtualAccount, createVirtualAccount);
 nombaRoutes.get('/virtual-accounts/:userId', validateGetVirtualAccount, getVirtualAccount);

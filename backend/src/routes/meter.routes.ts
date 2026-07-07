@@ -13,5 +13,5 @@ import {
 export const meterRoutes = Router();
 
 meterRoutes.post('/meter', requireApiKey, validateMeterCheck, meterCheck);
-meterRoutes.get('/users/:userId/balance', validateUserBalanceQuery, getUserBalanceAndHistory);
+meterRoutes.get('/users/:userId/balance', requireApiKey, validateUserBalanceQuery, getUserBalanceAndHistory);
 
