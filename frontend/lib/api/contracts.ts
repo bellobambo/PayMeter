@@ -24,7 +24,7 @@ export type FounderRegisterRequest = FounderAuthRequest & {
 
 export type FounderAuthResponse = {
   founder: Founder;
-  token: string;
+  token?: string;
 };
 
 export type ApiKeyRecord = {

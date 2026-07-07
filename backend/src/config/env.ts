@@ -10,6 +10,7 @@ const requiredEnv = [
     'NOMBA_CLIENT_SECRET',
     'NOMBA_PARENT_ACCOUNT_ID',
     'NOMBA_SUB_ACCOUNT_ID',
+    'JWT_SECRET',
 ];
 
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
@@ -45,7 +46,7 @@ function normalizeNombaBaseUrl(url: string): string {
 export const env = {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: Number(process.env.PORT ?? 5000),
-    jwtSecret: process.env.JWT_SECRET ?? 'paymeter-default-secret-dev-only-change-this-1234567890',
+    jwtSecret: getRequiredEnv('JWT_SECRET'),
     supabase: {
         url: normalizeSupabaseUrl(getRequiredEnv('SUPABASE_URL')),
         serviceRoleKey: getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY'),

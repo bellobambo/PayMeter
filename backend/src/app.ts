@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -18,7 +19,11 @@ export const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+    origin: (origin, callback) => callback(null, origin || true),
+    credentials: true,
+}));
 app.use(morgan('dev'));
 
 // Apply general rate limiting to all requests
@@ -90,6 +95,7 @@ const routeMethods: Record<string, string[]> = {
     '/webhooks/nomba': ['POST'],
     '/api/founders/register': ['POST'],
     '/api/founders/login': ['POST'],
+    '/api/founders/logout': ['POST'],
     '/api/founders/analytics': ['GET'],
     '/api/founders/api-keys': ['POST', 'GET'],
     '/api/founders/settlement/summary': ['GET'],

@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/paymeter-client";
 import { getApiBaseUrl } from "@/lib/api/contracts";
 import { formatNaira } from "@/lib/format";
+import { SecureStorage } from "@/lib/secureStorage";
 import type { DemoUser, UsageEvent } from "@/lib/types";
 
 const captionFeature = {
@@ -76,7 +77,7 @@ function isCreditMode(value: unknown): value is CreditMode {
 }
 
 function readStudioSession() {
-  const storedSession = window.localStorage.getItem(STUDIO_SESSION_KEY);
+  const storedSession = SecureStorage.getItem(STUDIO_SESSION_KEY);
 
   if (!storedSession) {
     return null;
@@ -85,7 +86,7 @@ function readStudioSession() {
   try {
     return JSON.parse(storedSession) as StudioSession;
   } catch {
-    window.localStorage.removeItem(STUDIO_SESSION_KEY);
+    SecureStorage.removeItem(STUDIO_SESSION_KEY);
     return null;
   }
 }
@@ -255,7 +256,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       setStudioFounderId(studioSession?.founder.id ?? null);
       setStudioToken(studioSession?.token ?? null);
 
-      const savedState = window.localStorage.getItem(CAPTIONPILOT_STORAGE_KEY);
+      const savedState = SecureStorage.getItem(CAPTIONPILOT_STORAGE_KEY);
 
       if (savedState) {
         try {
@@ -270,7 +271,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
             setNotice(`Welcome back, ${parsed.user.name}.`);
           }
         } catch {
-          window.localStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
+          SecureStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
         }
       }
 
@@ -315,8 +316,8 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       const studioToken = studioSession?.token ?? null;
       setStudioToken(studioToken);
 
-      if (studioToken) {
-        void syncFeatureConfig(studioToken);
+      if (studioSession) {
+        void syncFeatureConfig(studioToken ?? "");
       }
     }, 0);
 
@@ -334,11 +335,11 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     }
 
     if (!user) {
-      window.localStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
+      SecureStorage.removeItem(CAPTIONPILOT_STORAGE_KEY);
       return;
     }
 
-    window.localStorage.setItem(
+    SecureStorage.setItem(
       CAPTIONPILOT_STORAGE_KEY,
       JSON.stringify({
         user,
@@ -440,7 +441,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       return false;
     }
 
-    if (isLiveMode && !studioToken) {
+    if (isLiveMode && !studioFounderId) {
       const message = "Your workspace session expired. Reopen CaptionPilot from Studio and try again.";
       setNotice(message);
       pushToast({
@@ -503,7 +504,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     const requestKey = `meter_${user.id}_${feature.id}_${Date.now()}`;
     const usesConfirmedMeter = isLiveMode && creditMode === "confirmed";
 
-    if (usesConfirmedMeter && !studioToken) {
+    if (usesConfirmedMeter && !studioFounderId) {
       const message = "Your workspace session expired. Reopen CaptionPilot from Studio and try again.";
       setNotice(message);
       pushToast({

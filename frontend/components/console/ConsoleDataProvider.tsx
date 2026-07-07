@@ -7,6 +7,7 @@ import {
   listBillableFeatures,
   loginFounder,
   registerFounder,
+  logoutFounder,
   toggleBillableFeature,
   updateBillableFeature,
   type StudioSession,
@@ -14,6 +15,7 @@ import {
 import { getApiBaseUrl } from "@/lib/api/contracts";
 import { formatNaira } from "@/lib/format";
 import { seedFeatures } from "@/lib/mock-api";
+import { SecureStorage } from "@/lib/secureStorage";
 import type { BillableFeature } from "@/lib/types";
 
 type StudioAnalytics = {
@@ -40,7 +42,7 @@ type ConsoleDataContextValue = {
   analytics: StudioAnalytics;
   register: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
   login: (input: { email: string; password: string }) => Promise<AuthResult>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshStudioData: () => Promise<void>;
   createFeature: (input: { name: string; price: number }) => Promise<void>;
   updateFeature: (featureId: string, input: { name: string; price: number }) => Promise<void>;
@@ -82,12 +84,12 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
     setSession(nextSession);
 
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+      SecureStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
     }
   }, []);
 
   const refreshStudioData = useCallback(async () => {
-    if (!isLiveMode || !session?.token) {
+    if (!isLiveMode || !session) {
       return;
     }
 
@@ -96,8 +98,8 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
 
     try {
       const [liveFeatures, liveAnalytics] = await Promise.all([
-        listBillableFeatures(session.token),
-        getFounderAnalytics(session.token),
+        listBillableFeatures(session.token ?? null),
+        getFounderAnalytics(session.token ?? null),
       ]);
 
       if (liveAnalytics) {
@@ -121,13 +123,13 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
   }, [isLiveMode, session?.token]);
 
   useEffect(() => {
-    const storedSession = window.localStorage.getItem(SESSION_KEY);
+    const storedSession = SecureStorage.getItem(SESSION_KEY);
 
     if (storedSession) {
       try {
         setSession(JSON.parse(storedSession) as StudioSession);
       } catch {
-        window.localStorage.removeItem(SESSION_KEY);
+        SecureStorage.removeItem(SESSION_KEY);
       }
     }
 
@@ -135,10 +137,10 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    if (isHydrated && session?.token) {
+    if (isHydrated && session) {
       void refreshStudioData();
     }
-  }, [isHydrated, refreshStudioData, session?.token]);
+  }, [isHydrated, refreshStudioData, session]);
 
   useEffect(() => {
     if (isHydrated && isLiveMode && !session) {
@@ -183,7 +185,15 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
     [persistSession],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (isLiveMode) {
+      try {
+        await logoutFounder();
+      } catch (err) {
+        // Continue logout locally even if backend fails
+      }
+    }
+
     setSession(null);
     setAnalyticsOverride(null);
     setFeatures(isLiveMode ? [] : seedFeatures);
@@ -191,7 +201,7 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
     setNotice(isLiveMode ? "Sign in to manage live pricing and usage data." : "Preview data is loaded for the product walkthrough.");
 
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem(SESSION_KEY);
+      SecureStorage.removeItem(SESSION_KEY);
     }
   }, [isLiveMode]);
 

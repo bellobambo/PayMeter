@@ -18,9 +18,9 @@ export function hashPassword(password: string): string {
  */
 export function verifyPassword(password: string, storedHash: string): boolean {
     const parts = storedHash.split(':');
-    let salt: string;
-    let iterationsStr: string;
-    let hash: string;
+    let salt: string | undefined;
+    let iterationsStr: string | undefined;
+    let hash: string | undefined;
     
     if (parts.length === 2) {
         [salt, hash] = parts;

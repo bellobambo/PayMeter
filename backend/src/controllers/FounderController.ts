@@ -45,6 +45,13 @@ export async function register(req: AuthenticatedRequest, res: Response, next: N
             env.jwtSecret,
         );
 
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: env.nodeEnv === 'production',
+            sameSite: 'lax',
+            maxAge: 86400 * 1000, // 24 hours
+        });
+
         return successResponse(res, {
             statusCode: 201,
             message: 'Founder registered successfully.',
@@ -54,7 +61,6 @@ export async function register(req: AuthenticatedRequest, res: Response, next: N
                     name: founder.name,
                     email: founder.email,
                 },
-                token,
             },
         });
     } catch (error) {
@@ -86,6 +92,13 @@ export async function login(req: AuthenticatedRequest, res: Response, next: Next
             env.jwtSecret,
         );
 
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: env.nodeEnv === 'production',
+            sameSite: 'lax',
+            maxAge: 86400 * 1000, // 24 hours
+        });
+
         return successResponse(res, {
             message: 'Founder logged in successfully.',
             data: {
@@ -94,12 +107,24 @@ export async function login(req: AuthenticatedRequest, res: Response, next: Next
                     name: founder.name,
                     email: founder.email,
                 },
-                token,
             },
         });
     } catch (error) {
         next(error);
     }
+}
+
+export function logout(_req: AuthenticatedRequest, res: Response) {
+    res.clearCookie('jwt', {
+        httpOnly: true,
+        secure: env.nodeEnv === 'production',
+        sameSite: 'lax',
+    });
+
+    return successResponse(res, {
+        message: 'Founder logged out successfully.',
+        data: null,
+    });
 }
 
 export async function getAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction) {

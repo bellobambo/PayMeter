@@ -15,20 +15,20 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export function requireFounderAuth(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
-    const authHeader = req.headers.authorization;
+    let token = req.cookies?.jwt;
 
-    if (!authHeader) {
-        throw new AppError('Authorization header is required.', 401);
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader) {
+            const parts = authHeader.split(' ');
+            if (parts.length === 2 && parts[0] === 'Bearer') {
+                token = parts[1];
+            }
+        }
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2) {
-        throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
-    }
-
-    const [type, token] = parts;
-    if (type !== 'Bearer' || !token) {
-        throw new AppError('Authorization header must be formatted as: Bearer <token>.', 401);
+    if (!token) {
+        throw new AppError('Authorization failed. Cookie or Bearer token is required.', 401);
     }
 
     const decoded = verifyToken<{ id: string; email: string; name: string }>(token, env.jwtSecret);
@@ -52,7 +52,11 @@ export async function requireApiKeyOrJwt(req: AuthenticatedRequest, _res: Respon
             apiKey = xApiKeyHeader;
         }
 
-        // 2. Check Authorization Bearer header
+        // 2. Check cookies or Authorization Bearer header
+        if (req.cookies?.jwt) {
+            jwtToken = req.cookies.jwt;
+        }
+
         const authHeader = req.headers.authorization;
         if (authHeader) {
             const parts = authHeader.split(' ');
@@ -61,7 +65,7 @@ export async function requireApiKeyOrJwt(req: AuthenticatedRequest, _res: Respon
                 if (type === 'Bearer' && token) {
                     if (token.startsWith('pm_live_')) {
                         apiKey = token;
-                    } else {
+                    } else if (!jwtToken) {
                         jwtToken = token;
                     }
                 }

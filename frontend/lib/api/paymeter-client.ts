@@ -58,6 +58,7 @@ async function request<T>(path: string, init?: RequestOptions): Promise<T> {
   try {
     response = await fetch(`${baseUrl}${path}`, {
       ...init,
+      credentials: "include",
       headers: {
         ...headers,
         ...(init?.headers as Record<string, string> | undefined),
@@ -137,6 +138,16 @@ export async function loginFounder(input: FounderAuthRequest) {
   return request<FounderAuthResponse>("/api/founders/login", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function logoutFounder() {
+  if (!getApiBaseUrl()) {
+    return;
+  }
+
+  return request<null>("/api/founders/logout", {
+    method: "POST",
   });
 }
 
@@ -507,5 +518,5 @@ export async function meterFeatureUse(
 
 export type StudioSession = {
   founder: Founder;
-  token: string;
+  token?: string;
 };

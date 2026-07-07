@@ -4,6 +4,7 @@ import {
     getAnalytics,
     login,
     register,
+    logout,
 } from '../controllers/FounderController.js';
 import {
     createApiKey,
@@ -37,6 +38,7 @@ export const founderRoutes = Router();
 
 founderRoutes.post('/register', authLimiter, validateFounderRegister, register);
 founderRoutes.post('/login', authLimiter, validateFounderLogin, login);
+founderRoutes.post('/logout', logout);
 founderRoutes.get('/analytics', requireFounderAuth, getAnalytics);
 
 // API key management routes
