@@ -113,18 +113,71 @@ async function runHttpTests() {
             });
             console.log('   ✅ Credit result:', creditResult);
 
-            // 6. Concurrency check via HTTP POST /api/meter
+            // 5a. Create API Key via HTTP
+            console.log(`\n5a. POST /api/founders/api-keys...`);
+            const keyCreateRes = await fetch(`http://localhost:${PORT}/api/founders/api-keys`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name: 'E2E Testing Key',
+                }),
+            });
+            const keyCreateData = (await keyCreateRes.json()) as any;
+            if (!keyCreateRes.ok || !keyCreateData.success) {
+                throw new Error(`API key creation failed: ${JSON.stringify(keyCreateData)}`);
+            }
+            const apiKey = keyCreateData.data.apiKey;
+            const apiKeyId = keyCreateData.data.id;
+            console.log(`   ✅ API Key created successfully: Prefix: ${keyCreateData.data.keyPrefix}`);
+
+            // 5b. Verify API Key validation failures on /api/meter
+            console.log(`\n5b. Testing API key authentication failures on POST /api/meter...`);
+            const noKeyRes = await fetch(`http://localhost:${PORT}/api/meter`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: internalUserId,
+                    featureName: featureName,
+                }),
+            });
+            console.log(`   No key request status (expected 401): ${noKeyRes.status}`);
+            if (noKeyRes.status !== 401) {
+                throw new Error(`Expected 401 Unauthorized for request without API key, got ${noKeyRes.status}`);
+            }
+
+            const invalidKeyRes = await fetch(`http://localhost:${PORT}/api/meter`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'pm_live_invalidkeyhere123456',
+                },
+                body: JSON.stringify({
+                    userId: internalUserId,
+                    featureName: featureName,
+                }),
+            });
+            console.log(`   Invalid key request status (expected 401): ${invalidKeyRes.status}`);
+            if (invalidKeyRes.status !== 401) {
+                throw new Error(`Expected 401 Unauthorized for request with invalid API key, got ${invalidKeyRes.status}`);
+            }
+
+            // 6. Concurrency check via HTTP POST /api/meter (using the generated API key)
             console.log(`\n6. Concurrency check: Firing 5 concurrent POST /api/meter requests...`);
             console.log(`   Initial balance: ₦120. Expected successes: 2. Expected failures: 3.`);
 
             const meterPromises = Array.from({ length: 5 }).map(async (_, idx) => {
                 const res = await fetch(`http://localhost:${PORT}/api/meter`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                    },
                     body: JSON.stringify({
                         userId: internalUserId,
                         featureName: featureName,
-                        founderId,
                     }),
                 });
                 const data = (await res.json()) as any;
@@ -181,6 +234,50 @@ async function runHttpTests() {
             if (analData.data.totalRevenue !== 100) {
                 throw new Error(`Expected total revenue 100 but got ${analData.data.totalRevenue}`);
             }
+
+            // 9. List and Delete API Key
+            console.log(`\n9. Listing API keys...`);
+            const listRes = await fetch(`http://localhost:${PORT}/api/founders/api-keys`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const listData = (await listRes.json()) as any;
+            if (!listRes.ok || !listData.success) {
+                throw new Error(`Failed to list API keys: ${JSON.stringify(listData)}`);
+            }
+            console.log(`   ✅ Active keys count: ${listData.data.length}`);
+            const foundKey = listData.data.find((k: any) => k.id === apiKeyId);
+            if (!foundKey) {
+                throw new Error(`Created API key was not found in listing.`);
+            }
+
+            console.log(`   Deleting API key ${apiKeyId}...`);
+            const delRes = await fetch(`http://localhost:${PORT}/api/founders/api-keys/${apiKeyId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const delData = (await delRes.json()) as any;
+            if (!delRes.ok || !delData.success) {
+                throw new Error(`Failed to delete API key: ${JSON.stringify(delData)}`);
+            }
+            console.log(`   ✅ API key deleted successfully!`);
+
+            console.log(`   Verifying deleted API key no longer works...`);
+            const deletedKeyCheckRes = await fetch(`http://localhost:${PORT}/api/meter`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                },
+                body: JSON.stringify({
+                    userId: internalUserId,
+                    featureName: featureName,
+                }),
+            });
+            console.log(`   Deleted key request status (expected 401): ${deletedKeyCheckRes.status}`);
+            if (deletedKeyCheckRes.status !== 401) {
+                throw new Error(`Expected 401 Unauthorized for deleted API key, got ${deletedKeyCheckRes.status}`);
+            }
+            console.log(`   ✅ API key revocation verified successfully!`);
 
             console.log('\n🎉 ALL E2E HTTP INTEGRATION TESTS PASSED SUCCESSFULLY!');
             console.log('⚠️  Skipped database cleanup to inspect test records in the dashboard!');

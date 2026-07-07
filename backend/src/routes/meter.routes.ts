@@ -4,6 +4,7 @@ import {
     getUserBalanceAndHistory,
     meterCheck,
 } from '../controllers/MeterController.js';
+import { requireApiKey } from '../middlewares/apiKeyAuth.js';
 import {
     validateMeterCheck,
     validateUserBalanceQuery,
@@ -11,5 +12,6 @@ import {
 
 export const meterRoutes = Router();
 
-meterRoutes.post('/meter', validateMeterCheck, meterCheck);
+meterRoutes.post('/meter', requireApiKey, validateMeterCheck, meterCheck);
 meterRoutes.get('/users/:userId/balance', validateUserBalanceQuery, getUserBalanceAndHistory);
+

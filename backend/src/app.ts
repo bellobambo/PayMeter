@@ -76,6 +76,7 @@ const routeMethods: Record<string, string[]> = {
     '/api/founders/register': ['POST'],
     '/api/founders/login': ['POST'],
     '/api/founders/analytics': ['GET'],
+    '/api/founders/api-keys': ['POST', 'GET'],
     '/api/features': ['POST', 'GET'],
     '/api/meter': ['POST'],
 };
@@ -87,9 +88,11 @@ app.use((req, res, next) => {
             ? ['GET']
             : req.path.startsWith('/api/features/')
                 ? ['PUT', 'PATCH']
-                : req.path.startsWith('/api/users/') && req.path.endsWith('/balance')
-                    ? ['GET']
-                    : null
+                : req.path.startsWith('/api/founders/api-keys/')
+                    ? ['DELETE']
+                    : req.path.startsWith('/api/users/') && req.path.endsWith('/balance')
+                        ? ['GET']
+                        : null
     );
 
     if (!allowedMethods || allowedMethods.includes(req.method)) {

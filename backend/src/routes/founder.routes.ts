@@ -5,14 +5,29 @@ import {
     login,
     register,
 } from '../controllers/FounderController.js';
+import {
+    createApiKey,
+    deleteApiKey,
+    listApiKeys,
+} from '../controllers/ApiKeyController.js';
 import { requireFounderAuth } from '../middlewares/auth.js';
 import {
     validateFounderLogin,
     validateFounderRegister,
 } from '../validators/founder.validators.js';
+import {
+    validateCreateApiKey,
+    validateDeleteApiKey,
+} from '../validators/apiKey.validators.js';
 
 export const founderRoutes = Router();
 
 founderRoutes.post('/register', validateFounderRegister, register);
 founderRoutes.post('/login', validateFounderLogin, login);
 founderRoutes.get('/analytics', requireFounderAuth, getAnalytics);
+
+// API key management routes
+founderRoutes.post('/api-keys', requireFounderAuth, validateCreateApiKey, createApiKey);
+founderRoutes.get('/api-keys', requireFounderAuth, listApiKeys);
+founderRoutes.delete('/api-keys/:id', requireFounderAuth, validateDeleteApiKey, deleteApiKey);
+

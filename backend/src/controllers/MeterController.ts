@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { supabase } from '../config/supabase.js';
+import type { AuthenticatedApiKeyRequest } from '../middlewares/apiKeyAuth.js';
 import { successResponse } from '../utils/apiResponse.js';
 import { AppError } from '../utils/AppError.js';
 import { retry } from '../utils/retry.js';
@@ -25,9 +26,10 @@ function normalizeVirtualAccountUser(users: VirtualAccountUserRow | null | undef
     };
 }
 
-export async function meterCheck(req: Request, res: Response, next: NextFunction) {
+export async function meterCheck(req: AuthenticatedApiKeyRequest, res: Response, next: NextFunction) {
     try {
-        const { userId, featureName, founderId } = req.body;
+        const { userId, featureName } = req.body;
+        const founderId = req.founder?.id;
 
         // Call the check_and_deduct_meter stored procedure with retry for network resilience
         const { data, error } = await retry(
