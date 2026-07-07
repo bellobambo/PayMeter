@@ -10,6 +10,14 @@ import {
     deleteApiKey,
     listApiKeys,
 } from '../controllers/ApiKeyController.js';
+import {
+    getSettlementAccount,
+    getSettlementSummary,
+    listPayouts,
+    listSettlementBanks,
+    requestPayout,
+    verifySettlementAccount,
+} from '../controllers/FounderSettlementController.js';
 import { requireFounderAuth } from '../middlewares/auth.js';
 import {
     validateFounderLogin,
@@ -19,6 +27,10 @@ import {
     validateCreateApiKey,
     validateDeleteApiKey,
 } from '../validators/apiKey.validators.js';
+import {
+    validatePayoutRequest,
+    validateSettlementAccount,
+} from '../validators/settlement.validators.js';
 
 export const founderRoutes = Router();
 
@@ -31,3 +43,9 @@ founderRoutes.post('/api-keys', requireFounderAuth, validateCreateApiKey, create
 founderRoutes.get('/api-keys', requireFounderAuth, listApiKeys);
 founderRoutes.delete('/api-keys/:id', requireFounderAuth, validateDeleteApiKey, deleteApiKey);
 
+founderRoutes.get('/settlement/summary', requireFounderAuth, getSettlementSummary);
+founderRoutes.get('/settlement/banks', requireFounderAuth, listSettlementBanks);
+founderRoutes.get('/settlement/account', requireFounderAuth, getSettlementAccount);
+founderRoutes.post('/settlement/account/verify', requireFounderAuth, validateSettlementAccount, verifySettlementAccount);
+founderRoutes.get('/settlement/payouts', requireFounderAuth, listPayouts);
+founderRoutes.post('/settlement/payouts', requireFounderAuth, validatePayoutRequest, requestPayout);

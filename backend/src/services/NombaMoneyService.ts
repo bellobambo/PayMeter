@@ -16,14 +16,14 @@ type Balance = {
   timeCreated?: string;
 };
 
-type Bank = {
+export type Bank = {
   name: string;
   code: string;
   nipCode?: string | null;
   logo?: string;
 };
 
-type BankLookup = {
+export type BankLookup = {
   accountNumber: string;
   accountName: string;
 };
@@ -48,7 +48,7 @@ type WalletTransferInput = {
   subAccountId?: string | null;
 };
 
-type TransferResponse = {
+export type TransferResponse = {
   id?: string;
   status?: string;
   type?: string;

@@ -17,15 +17,14 @@ headers {
 
 body:json {
   {
-    "name": "Caption Generation",
-    "price": 50
+    "name": "{{featureName}}",
+    "price": {{featurePrice}}
   }
 }
 
 tests {
-  test("should create feature successfully", function() {
-    expect(res.status).to.equal(201);
-    expect(res.body.success).to.be.true;
+  test("should create feature or report that it already exists", function() {
+    expect([201, 409]).to.include(res.status);
   });
   
   if (res.body && res.body.success && res.body.data && res.body.data.id) {

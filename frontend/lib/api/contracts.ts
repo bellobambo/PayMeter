@@ -49,6 +49,62 @@ export type BackendAnalyticsResponse = {
   }>;
 };
 
+export type SettlementBank = {
+  name: string;
+  code: string;
+  nipCode?: string | null;
+  logo?: string;
+};
+
+export type SettlementAccount = {
+  id: string;
+  founderId: string;
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  verifiedAt: string;
+  updatedAt: string;
+};
+
+export type SettlementPayout = {
+  id: string;
+  amount: number;
+  status: "reserved" | "processing" | "paid" | "failed" | "cancelled";
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  merchantTxRef: string;
+  transferReference: string | null;
+  transferStatus: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  paidAt: string | null;
+};
+
+export type SettlementSummaryResponse = {
+  summary: {
+    totalRevenue: number;
+    availableBalance: number;
+    pendingPayouts: number;
+    paidOut: number;
+  };
+  settlementAccount: SettlementAccount | null;
+  recentPayouts: SettlementPayout[];
+};
+
+export type VerifySettlementAccountRequest = {
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+};
+
+export type CreatePayoutRequest = {
+  amount: number;
+};
+
 export type RegisterDemoUserRequest = {
   userId?: string;
   name: string;
@@ -119,6 +175,24 @@ export const taskTwoContracts = [
     path: "/api/founders/analytics",
     owner: "PayMeter backend",
     purpose: "Return revenue, active users, and per-feature usage.",
+  },
+  {
+    method: "GET",
+    path: "/api/founders/settlement/summary",
+    owner: "PayMeter backend",
+    purpose: "Return founder revenue available for withdrawal, pending payouts, paid payouts, and settlement account.",
+  },
+  {
+    method: "POST",
+    path: "/api/founders/settlement/account/verify",
+    owner: "PayMeter backend",
+    purpose: "Verify and save the founder bank account used for withdrawals.",
+  },
+  {
+    method: "POST",
+    path: "/api/founders/settlement/payouts",
+    owner: "PayMeter backend",
+    purpose: "Reserve founder revenue and initiate a bank payout.",
   },
   {
     method: "POST",

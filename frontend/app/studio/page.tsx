@@ -26,7 +26,7 @@ export default function ConsoleOverviewPage() {
         }
         description="Manage usage-based pricing for your product: define paid actions, watch revenue, and keep every customer action tied to a balance."
         eyebrow="PayMeter Studio"
-        title={`Good evening, ${founderName}.`}
+        title={`Welcome back, ${founderName}.`}
       />
 
       <section className="mt-6 flex flex-col gap-2 rounded-lg border border-ink/10 bg-white px-4 py-3 text-sm text-graphite shadow-line sm:flex-row sm:items-center sm:justify-between">

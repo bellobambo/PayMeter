@@ -16,8 +16,8 @@ headers {
 
 body:json {
   {
-    "email": "tunde@paymeter.local",
-    "password": "securepassword123"
+    "email": "{{founderEmail}}",
+    "password": "{{founderPassword}}"
   }
 }
 
@@ -29,5 +29,9 @@ tests {
   
   if (res.body && res.body.success && res.body.data && res.body.data.token) {
     bru.setVar("token", res.body.data.token);
+  }
+
+  if (res.body && res.body.success && res.body.data && res.body.data.founder && res.body.data.founder.id) {
+    bru.setVar("founderId", res.body.data.founder.id);
   }
 }

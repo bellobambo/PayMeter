@@ -1,0 +1,28 @@
+meta {
+  name: Request Payout
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/founders/settlement/payouts
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "amount": {{payoutAmount}}
+  }
+}
+
+tests {
+  test("should create payout or explain why it cannot be created", function() {
+    expect([201, 202, 422]).to.include(res.status);
+  });
+}

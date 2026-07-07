@@ -100,44 +100,123 @@ function formatEventTime(value: string) {
   return date.toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" });
 }
 
-function sentenceCase(value: string) {
-  const cleanValue = value.trim().replace(/\s+/g, " ");
-  return cleanValue ? cleanValue.charAt(0).toUpperCase() + cleanValue.slice(1) : "Your next campaign";
+function titleCase(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => {
+      if (word.length <= 2 && word === word.toUpperCase()) {
+        return word;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
+function stripPromptLanguage(value: string) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^(please\s+)?(generate|write|create|draft|make)\s+(a|an|the)?\s*/i, "")
+    .replace(/^(launch\s+)?(campaign|caption|post|copy|ad|announcement)\s+(for|about)\s+/i, "")
+    .replace(/^for\s+/i, "");
+}
+
+function parseCampaignBrief(brief: string) {
+  const cleaned = stripPromptLanguage(brief);
+  const match = cleaned.match(/^(.+?)(?:,?\s+(?:which is|that is|it's|it is)\s+(?:a|an|the)?\s+(.+))$/i);
+  const firstComma = cleaned.indexOf(",");
+
+  const rawProduct = match?.[1] ?? (firstComma > 0 ? cleaned.slice(0, firstComma) : cleaned);
+  const rawDescription = match?.[2] ?? (firstComma > 0 ? cleaned.slice(firstComma + 1) : "");
+  const productName = titleCase(rawProduct.replace(/[.!?]$/g, "")) || "Your product";
+  const descriptor = rawDescription
+    .replace(/^(a|an|the)\s+/i, "")
+    .replace(/[.!?]$/g, "")
+    .trim();
+
+  return {
+    productName,
+    descriptor: descriptor || "a product built to help customers move faster with less friction",
+  };
+}
+
+function chooseAudience(descriptor: string) {
+  const lower = descriptor.toLowerCase();
+
+  if (lower.includes("founder") || lower.includes("startup") || lower.includes("cofounder")) {
+    return "founders";
+  }
+
+  if (lower.includes("business") || lower.includes("sme") || lower.includes("merchant")) {
+    return "small business owners";
+  }
+
+  if (lower.includes("creator") || lower.includes("content")) {
+    return "creators";
+  }
+
+  if (lower.includes("team") || lower.includes("company")) {
+    return "teams";
+  }
+
+  return "customers";
+}
+
+function buildHashtags(productName: string, descriptor: string) {
+  const words = `${productName} ${descriptor}`
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 3)
+    .filter((word, index, wordsArray) => wordsArray.findIndex((candidate) => candidate.toLowerCase() === word.toLowerCase()) === index)
+    .slice(0, 3);
+
+  const tags = words.map((word) => `#${titleCase(word).replace(/\s/g, "")}`);
+
+  if (!tags.some((tag) => tag.toLowerCase().includes("startup")) && descriptor.toLowerCase().includes("founder")) {
+    tags.push("#Startup");
+  }
+
+  return tags.slice(0, 4).join(" ");
 }
 
 function buildCaption({ brief, platform, tone }: CaptionRequest) {
-  const product = sentenceCase(brief);
+  const { productName, descriptor } = parseCampaignBrief(brief);
+  const audience = chooseAudience(descriptor);
   const cleanPlatform = platform.trim();
   const cleanTone = tone.trim();
 
   const toneMap: Record<string, { hook: string; proof: string; cta: string }> = {
     Confident: {
-      hook: `${product} is built for teams that want clearer launches, faster decisions, and less guesswork.`,
-      proof: "Turn the messy parts of the work into a simple flow your customers can understand in seconds.",
-      cta: "Start with one task today and see the difference before your next campaign goes live.",
+      hook: `${productName} helps ${audience} turn the right connection into real momentum.`,
+      proof: `As a ${descriptor}, it makes the next step feel clearer, faster, and less dependent on luck.`,
+      cta: "Start with the match that could move your idea from waiting to building.",
     },
     Friendly: {
-      hook: `Meet ${product}.`,
-      proof: "It helps you move from rough ideas to useful copy without wrestling with a blank page.",
-      cta: "Try it on your next launch and give your customers one clear reason to care.",
+      hook: `Meet ${productName}: a simpler way for ${audience} to find the right next person to build with.`,
+      proof: `It takes the stress out of ${descriptor} and helps good ideas meet people who can actually move them forward.`,
+      cta: "Bring your idea, share what you need, and start a better conversation today.",
     },
     Premium: {
-      hook: `${product} gives growing teams a sharper way to communicate value.`,
-      proof: "Every launch gets cleaner positioning, a stronger customer promise, and copy that feels ready to publish.",
-      cta: "Bring more polish to your next campaign without adding another heavy workflow.",
+      hook: `${productName} gives ambitious ${audience} a sharper way to find aligned partners.`,
+      proof: `For anyone serious about ${descriptor}, it creates a more intentional path from idea to collaboration.`,
+      cta: "Build with more clarity, stronger alignment, and fewer cold-start conversations.",
     },
     Direct: {
-      hook: `${product} helps you say what matters and move customers to action.`,
-      proof: "No vague messaging. No endless rewrite loop. Just launch-ready copy with a clear next step.",
-      cta: "Use it for your next campaign and publish faster.",
+      hook: `${productName} helps ${audience} find the right co-builder faster.`,
+      proof: `If you are working on ${descriptor}, this is a cleaner way to meet people who match your stage, skills, and ambition.`,
+      cta: "Create your profile, find a fit, and start building.",
     },
   };
 
   const selectedTone = toneMap[cleanTone] ?? toneMap.Confident;
-  const hashtagLine = "#Marketing #SmallBusiness #AITools";
+  const hashtagLine = buildHashtags(productName, descriptor);
 
   if (cleanPlatform === "X") {
-    return `${selectedTone.hook} ${selectedTone.cta}`;
+    return `${selectedTone.hook}\n\n${selectedTone.cta}`;
   }
 
   if (cleanPlatform === "WhatsApp") {
@@ -145,7 +224,7 @@ function buildCaption({ brief, platform, tone }: CaptionRequest) {
   }
 
   if (cleanPlatform === "LinkedIn") {
-    return `${selectedTone.hook}\n\n${selectedTone.proof}\n\nFor founders and teams, the real win is momentum: explain the offer, show the value, and get the next customer conversation started.\n\n${selectedTone.cta}`;
+    return `${selectedTone.hook}\n\n${selectedTone.proof}\n\nFor ${audience}, the hard part is rarely ambition. It is finding someone with the right context, trust, and complementary strength at the right time.\n\n${selectedTone.cta}`;
   }
 
   return `${selectedTone.hook}\n\n${selectedTone.proof}\n\n${selectedTone.cta}\n\n${hashtagLine}`;

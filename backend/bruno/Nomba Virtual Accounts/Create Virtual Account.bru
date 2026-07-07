@@ -16,12 +16,17 @@ headers {
 
 body:json {
   {
-    "userId": "test_user_001",
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    // optional
-    "companyName": "Acme Labs",
-    // optional
-    "phoneNumber": "+2348012345678"
+    "userId": "{{customerUserId}}",
+    "name": "{{customerName}}",
+    "email": "{{customerEmail}}",
+    "companyName": "CaptionPilot",
+    "phoneNumber": "{{customerPhone}}"
   }
+}
+
+tests {
+  test("should create or return the customer virtual account", function() {
+    expect([200, 201]).to.include(res.status);
+    expect(res.body.success).to.be.true;
+  });
 }

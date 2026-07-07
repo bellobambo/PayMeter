@@ -41,6 +41,9 @@ app.get('/', (_req, res) => {
             founderRegister: '/api/founders/register',
             founderLogin: '/api/founders/login',
             founderAnalytics: '/api/founders/analytics',
+            founderSettlementSummary: '/api/founders/settlement/summary',
+            founderSettlementAccount: '/api/founders/settlement/account',
+            founderSettlementPayouts: '/api/founders/settlement/payouts',
             features: '/api/features',
             meterCheck: '/api/meter',
             userBalance: '/api/users/:userId/balance',
@@ -77,23 +80,28 @@ const routeMethods: Record<string, string[]> = {
     '/api/founders/login': ['POST'],
     '/api/founders/analytics': ['GET'],
     '/api/founders/api-keys': ['POST', 'GET'],
+    '/api/founders/settlement/summary': ['GET'],
+    '/api/founders/settlement/banks': ['GET'],
+    '/api/founders/settlement/account': ['GET'],
+    '/api/founders/settlement/account/verify': ['POST'],
+    '/api/founders/settlement/payouts': ['GET', 'POST'],
     '/api/features': ['POST', 'GET'],
     '/api/meter': ['POST'],
 };
 
 app.use((req, res, next) => {
     const allowedMethods = routeMethods[req.path]
-    ?? (
-        req.path.startsWith('/api/nomba/virtual-accounts/')
-            ? ['GET']
-            : req.path.startsWith('/api/features/')
-                ? ['PUT', 'PATCH']
-                : req.path.startsWith('/api/founders/api-keys/')
-                    ? ['DELETE']
-                    : req.path.startsWith('/api/users/') && req.path.endsWith('/balance')
-                        ? ['GET']
-                        : null
-    );
+        ?? (
+            req.path.startsWith('/api/nomba/virtual-accounts/')
+                ? ['GET']
+                : req.path.startsWith('/api/features/')
+                    ? ['PUT', 'PATCH']
+                    : req.path.startsWith('/api/founders/api-keys/')
+                        ? ['DELETE']
+                        : req.path.startsWith('/api/users/') && req.path.endsWith('/balance')
+                            ? ['GET']
+                            : null
+        );
 
     if (!allowedMethods || allowedMethods.includes(req.method)) {
         next();
