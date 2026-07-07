@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Banknote, Clipboard, CreditCard, Loader2 } from "lucide-react";
+import { ArrowRight, Banknote, Clipboard, CreditCard, Loader2, RefreshCw } from "lucide-react";
 import { CaptionPilotHeader } from "@/components/captionpilot/CaptionPilotHeader";
 import { useCaptionPilot } from "@/components/captionpilot/CaptionPilotProvider";
 import { formatNaira } from "@/lib/format";
 
 export default function CaptionPilotTopUpPage() {
-  const { user, balance, notice, isFunding, simulateTopUp, copyAccountNumber } = useCaptionPilot();
+  const { user, balance, notice, isFunding, isLiveMode, simulateTopUp, copyAccountNumber } = useCaptionPilot();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
 
   async function handleTopUp(amount: number) {
@@ -70,7 +70,9 @@ export default function CaptionPilotTopUpPage() {
 
           <div className="space-y-3 bg-white p-5">
             <p className="text-sm leading-6 text-graphite">
-              Transfer to this account and your caption credit becomes available for generation.
+              {isLiveMode
+                ? "Transfer to this account, then refresh after payment confirmation. Your caption credit updates once the payment is confirmed."
+                : "Choose an amount to add caption credit before writing."}
             </p>
             <button
               className="focus-ring flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-ink/10 bg-paper px-4 text-sm font-semibold text-ink transition hover:bg-ink hover:text-white"
@@ -97,23 +99,38 @@ export default function CaptionPilotTopUpPage() {
           <p className="mt-4 rounded-lg border border-ink/10 bg-paper px-3 py-3 text-sm text-graphite">{notice}</p>
 
           <div className="mt-6">
-            <h2 className="text-xl font-semibold text-ink">Choose an amount</h2>
+            <h2 className="text-xl font-semibold text-ink">{isLiveMode ? "Confirm payment" : "Choose an amount"}</h2>
             <p className="mt-2 text-sm leading-6 text-graphite">
-              Add enough credit for the captions you want to generate today.
+              {isLiveMode
+                ? "Once the payment is confirmed, your caption credit and generation access update here."
+                : "Add enough credit for the captions you want to generate today."}
             </p>
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              {[100, 500, 1000].map((amount) => (
-                <button
-                  className="focus-ring min-h-11 rounded-lg border border-ink/10 bg-paper text-sm font-semibold text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isFunding}
-                  key={amount}
-                  onClick={() => handleTopUp(amount)}
-                  type="button"
-                >
-                  {selectedAmount === amount ? <Loader2 className="mx-auto size-4 animate-spin" /> : formatNaira(amount)}
-                </button>
-              ))}
-            </div>
+
+            {isLiveMode ? (
+              <button
+                className="focus-ring mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 text-sm font-semibold text-white transition hover:bg-carbon disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isFunding}
+                onClick={() => handleTopUp(0)}
+                type="button"
+              >
+                {isFunding ? "Refreshing..." : "Refresh credit"}
+                {isFunding ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+              </button>
+            ) : (
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                {[100, 500, 1000].map((amount) => (
+                  <button
+                    className="focus-ring min-h-11 rounded-lg border border-ink/10 bg-paper text-sm font-semibold text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isFunding}
+                    key={amount}
+                    onClick={() => handleTopUp(amount)}
+                    type="button"
+                  >
+                    {selectedAmount === amount ? <Loader2 className="mx-auto size-4 animate-spin" /> : formatNaira(amount)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
