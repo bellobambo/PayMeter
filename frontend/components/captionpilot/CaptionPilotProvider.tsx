@@ -383,10 +383,24 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
       const snapshot = await fetchEndUserBalance(user.id, studioToken);
 
       if (!snapshot) {
+        console.log("CaptionPilot: refreshAccount returned no snapshot", {
+          userId: user.id,
+          creditMode,
+          isLiveMode,
+        });
         return;
       }
 
-      setBalance(Number(snapshot.balance) || 0);
+      const nextBalance = Number(snapshot.balance) || 0;
+      console.log("CaptionPilot: refreshAccount fetched balance", {
+        userId: user.id,
+        rawBalance: snapshot.balance,
+        nextBalance,
+        creditMode,
+        isLiveMode,
+      });
+
+      setBalance(nextBalance);
       setEvents(
         snapshot.usageHistory.map((event) => ({
           id: event.id,
@@ -396,9 +410,15 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
           createdAt: formatEventTime(event.createdAt),
         })),
       );
-      setNotice(`Caption credit synced: ${formatNaira(Number(snapshot.balance) || 0)}.`);
+      setNotice(`Caption credit synced: ${formatNaira(nextBalance)}.`);
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "Could not refresh caption credit.";
+      console.log("CaptionPilot: refreshAccount error", {
+        userId: user?.id,
+        creditMode,
+        isLiveMode,
+        error: message,
+      });
       setNotice(message);
       pushToast({
         tone: "error",
@@ -406,7 +426,7 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
         message,
       });
     }
-  }, [isLiveMode, pushToast, studioToken, user]);
+  }, [creditMode, isLiveMode, pushToast, studioToken, user]);
 
   useEffect(() => {
     if (!isRestored || !user || !isLiveMode || creditMode === "test") {
@@ -543,31 +563,31 @@ export function CaptionPilotProvider({ children }: { children: React.ReactNode }
     try {
       const meterResult = usesConfirmedMeter
         ? await meterFeatureUse(
-            {
-              userId: user.id,
-              featureName: feature.name,
-              founderId: studioFounderId ?? undefined,
-            },
-            {
-              balance,
-              featureName: feature.name,
-              featurePrice: feature.price,
-            },
-            studioToken,
-          )
+          {
+            userId: user.id,
+            featureName: feature.name,
+            founderId: studioFounderId ?? undefined,
+          },
+          {
+            balance,
+            featureName: feature.name,
+            featurePrice: feature.price,
+          },
+          studioToken,
+        )
         : {
-            allowed: true,
-            balance: balance - feature.price,
-            chargedAmount: feature.price,
-            message: "Test credit allowed.",
-            usageEvent: {
-              id: requestKey,
-              featureName: feature.name,
-              amount: feature.price,
-              status: "allowed" as const,
-              createdAt: new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }),
-            },
-          };
+          allowed: true,
+          balance: balance - feature.price,
+          chargedAmount: feature.price,
+          message: "Test credit allowed.",
+          usageEvent: {
+            id: requestKey,
+            featureName: feature.name,
+            amount: feature.price,
+            status: "allowed" as const,
+            createdAt: new Date().toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }),
+          },
+        };
 
       if (!meterResult.allowed) {
         setNotice(`Add at least ${formatNaira(feature.price)} credit before generating.`);

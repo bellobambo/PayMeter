@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, CircleDollarSign, KeyRound, PlugZap, ShieldCheck, Users } from "lucide-react";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
@@ -11,6 +12,19 @@ import { compactNumber, formatNaira } from "@/lib/format";
 
 export default function ConsoleOverviewPage() {
   const { founderName, analytics, features, isLiveMode, session, notice } = useConsoleData();
+  const isPreviewMode = !isLiveMode;
+
+  useEffect(() => {
+    console.log("Studio overview page data", {
+      founderName,
+      analytics,
+      features,
+      isLiveMode,
+      session,
+      notice,
+      source: isPreviewMode ? "preview" : "live",
+    });
+  }, [analytics, features, founderName, isLiveMode, notice, session, isPreviewMode]);
 
   return (
     <>

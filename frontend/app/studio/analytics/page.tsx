@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { BarChart3, CircleDollarSign, TrendingUp, Users } from "lucide-react";
 import clsx from "clsx";
 import { ConsoleHeader } from "@/components/console/ConsoleHeader";
@@ -8,8 +9,22 @@ import { useConsoleData } from "@/components/console/ConsoleDataProvider";
 import { compactNumber, formatNaira } from "@/lib/format";
 
 export default function ConsoleAnalyticsPage() {
-  const { analytics, error, features, isLoadingData, refreshStudioData, session } = useConsoleData();
+  const { analytics, error, features, isLoadingData, refreshStudioData, isLiveMode, session } = useConsoleData();
   const averageValue = analytics.totalUsage === 0 ? 0 : Math.round(analytics.totalRevenue / analytics.totalUsage);
+  const isPreviewMode = !isLiveMode;
+
+  useEffect(() => {
+    console.log("Studio analytics page data", {
+      analytics,
+      features,
+      averageValue,
+      isLiveMode,
+      session,
+      isLoadingData,
+      error,
+      source: isPreviewMode ? "preview" : "live",
+    });
+  }, [analytics, averageValue, error, features, isLiveMode, isLoadingData, isPreviewMode, session]);
 
   return (
     <>
@@ -37,6 +52,11 @@ export default function ConsoleAnalyticsPage() {
         <Metric title="Metered usage" value={compactNumber(analytics.totalUsage)} icon={BarChart3} tone="ink" />
         <Metric title="Avg. value/use" value={formatNaira(averageValue)} icon={TrendingUp} tone="mint" />
       </section>
+      {isPreviewMode ? (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Preview mode: these analytics values come from local sample data, not live backend telemetry.
+        </div>
+      ) : null}
 
       <section className="mt-6 rounded-lg border border-ink/10 bg-white p-5 shadow-line">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

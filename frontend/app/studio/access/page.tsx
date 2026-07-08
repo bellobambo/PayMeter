@@ -143,7 +143,9 @@ export default function ConsoleAccessPage() {
   return (
     <section className="mx-auto w-full max-w-xl">
       <div className="mb-8 flex justify-center">
-        <BrandMark />
+        <Link href="/" className="focus-ring rounded-full outline-none focus-visible:ring-2 focus-visible:ring-nomba-yellow">
+          <BrandMark />
+        </Link>
       </div>
       <div className="text-center">
         <p className="inline-flex rounded-full border border-ink/10 bg-white px-3 py-1 text-xs font-semibold text-graphite shadow-line">

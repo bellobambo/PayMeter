@@ -23,8 +23,9 @@ function getEncryptionKey(): string {
   let key = window.sessionStorage.getItem(SESSION_KEY_NAME);
 
   if (!key) {
-    key = generateKey();
+    key = window.localStorage.getItem(SESSION_KEY_NAME) ?? generateKey();
     window.sessionStorage.setItem(SESSION_KEY_NAME, key);
+    window.localStorage.setItem(SESSION_KEY_NAME, key);
   }
 
   return key;
@@ -48,7 +49,7 @@ export const SecureStorage = {
 
     try {
       const ciphertext = window.localStorage.getItem(key);
-      
+
       if (!ciphertext) {
         return null;
       }
@@ -56,8 +57,8 @@ export const SecureStorage = {
       // If it looks like raw JSON instead of ciphertext (legacy migration), parse it directly
       // but immediately secure it.
       if (ciphertext.startsWith("{") || ciphertext.startsWith("[")) {
-          this.setItem(key, ciphertext);
-          return ciphertext;
+        this.setItem(key, ciphertext);
+        return ciphertext;
       }
 
       const encryptionKey = getEncryptionKey();

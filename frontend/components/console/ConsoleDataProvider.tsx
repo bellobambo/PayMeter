@@ -14,7 +14,6 @@ import {
 } from "@/lib/api/paymeter-client";
 import { getApiBaseUrl } from "@/lib/api/contracts";
 import { formatNaira } from "@/lib/format";
-import { seedFeatures } from "@/lib/mock-api";
 import { SecureStorage } from "@/lib/secureStorage";
 import type { BillableFeature } from "@/lib/types";
 
@@ -58,27 +57,21 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
   const [session, setSession] = useState<StudioSession | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [features, setFeatures] = useState<BillableFeature[]>(() => (isLiveMode ? [] : seedFeatures));
-  const [analyticsOverride, setAnalyticsOverride] = useState<{ totalRevenue: number; activeUsers: number } | null>(null);
+  const [features, setFeatures] = useState<BillableFeature[]>([]);
+  const [analytics, setAnalytics] = useState<StudioAnalytics>({
+    totalRevenue: 0,
+    totalUsage: 0,
+    activeFeatures: 0,
+    activeUsers: 0,
+  });
   const [notice, setNotice] = useState(
-    isLiveMode ? "Sign in to manage live pricing and usage data." : "Preview data is loaded for the product walkthrough.",
+    isLiveMode
+      ? "Sign in to manage live pricing and usage data."
+      : "Live backend is not configured. Analytics are unavailable in preview mode.",
   );
   const [error, setError] = useState("");
 
   const founderName = session?.founder.name ?? (isLiveMode ? "" : "Tunde");
-
-  const analytics = useMemo<StudioAnalytics>(() => {
-    const totalRevenue = features.reduce((sum, feature) => sum + feature.price * feature.usageCount, 0);
-    const totalUsage = features.reduce((sum, feature) => sum + feature.usageCount, 0);
-    const activeFeatures = features.filter((feature) => feature.active).length;
-
-    return {
-      totalRevenue: analyticsOverride?.totalRevenue ?? totalRevenue,
-      totalUsage,
-      activeFeatures,
-      activeUsers: analyticsOverride?.activeUsers ?? (isLiveMode && !session ? 0 : 0),
-    };
-  }, [analyticsOverride, features, isLiveMode, session]);
 
   const persistSession = useCallback((nextSession: StudioSession) => {
     setSession(nextSession);
@@ -102,14 +95,30 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
         getFounderAnalytics(session.token ?? null),
       ]);
 
+      console.log("Studio fetch response", {
+        liveFeatures,
+        liveAnalytics,
+      });
+
       if (liveAnalytics) {
+        const totalUsage = liveAnalytics.features.reduce((sum, feature) => sum + feature.usageCount, 0);
+        const activeFeatures = liveAnalytics.features.filter((feature) => feature.active).length;
+
         setFeatures(liveAnalytics.features);
-        setAnalyticsOverride({
+        setAnalytics({
           totalRevenue: liveAnalytics.totalRevenue,
+          totalUsage,
+          activeFeatures,
           activeUsers: liveAnalytics.activeUsers,
         });
       } else if (liveFeatures) {
         setFeatures(liveFeatures);
+        setAnalytics({
+          totalRevenue: 0,
+          totalUsage: 0,
+          activeFeatures: liveFeatures.filter((feature) => feature.active).length,
+          activeUsers: 0,
+        });
       }
 
       setNotice("Studio data is up to date.");
@@ -143,11 +152,16 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
   }, [isHydrated, refreshStudioData, session]);
 
   useEffect(() => {
-    if (isHydrated && isLiveMode && !session) {
+    if (isHydrated && !session) {
       setFeatures([]);
-      setAnalyticsOverride(null);
+      setAnalytics({
+        totalRevenue: 0,
+        totalUsage: 0,
+        activeFeatures: 0,
+        activeUsers: 0,
+      });
     }
-  }, [isHydrated, isLiveMode, session]);
+  }, [isHydrated, session]);
 
   const register = useCallback(
     async (input: { name: string; email: string; password: string }) => {
@@ -195,10 +209,9 @@ export function ConsoleDataProvider({ children }: { children: React.ReactNode })
     }
 
     setSession(null);
-    setAnalyticsOverride(null);
-    setFeatures(isLiveMode ? [] : seedFeatures);
+    setFeatures([]);
     setError("");
-    setNotice(isLiveMode ? "Sign in to manage live pricing and usage data." : "Preview data is loaded for the product walkthrough.");
+    setNotice(isLiveMode ? "Sign in to manage live pricing and usage data." : "Live backend is not configured. Analytics are unavailable in preview mode.");
 
     if (typeof window !== "undefined") {
       SecureStorage.removeItem(SESSION_KEY);
