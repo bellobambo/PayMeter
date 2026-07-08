@@ -37,6 +37,7 @@ paymeter/
 └── frontend/   # Next.js, TypeScript, and Tailwind CSS Client App
 ```
 
+
 **Backend Base URL** : https://paymeter.onrender.com/
 
 ### Backend (`/backend`)
@@ -189,3 +190,8 @@ npm run test
 ## 🏆 Hackathon Details
 * **Theme:** DevCareer x Nomba Hackathon 2026
 * **Tracks covered:** Nomba Virtual Accounts (funding logic, webhooks), Nomba Transfer APIs (disbursement / developer payouts), SaaS Developer Tools.
+
+
+  ## Test User
+  **Email**: bellobambo21+44@gmail.com
+  **Password** : @Ayodeji2001
